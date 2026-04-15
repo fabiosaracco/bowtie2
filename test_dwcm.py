@@ -39,10 +39,10 @@ def main():
     for d in dico:
         if d['dico'].isnumeric():
             dico_dict[d['user_id']]=int(d['dico'])
-        else:
-            if d['dico'] not in bad_dicos:
-                bad_dicos.append(d['dico'])
-                print(d['dico'])
+        #else:
+        #    if d['dico'] not in bad_dicos:
+        #        bad_dicos.append(d['dico'])
+        #        print(d['dico'])
 
 
     
@@ -62,8 +62,8 @@ def main():
     )
 
 
-    for key in el_dico.keys():
-        print(key, len(el_dico[key]))
+    #for key in el_dico.keys():
+    #    print(key, len(el_dico[key]))
 
 
     del _tmp
@@ -77,13 +77,13 @@ def main():
     assert aux[2].sum()==aux[3].sum()
 
     # Number of nodes, Number of edges, edge density
-    print(len(aux[4]), len(el_dico[1]), len(el_dico[1])/len(aux[4])**2)
-
+    print(f'[{dt.datetime.now():%H:%M:%S}] Number of nodes: {len(aux[4])}, Number of edges: {len(el_dico[1])}, Edge density: {len(el_dico[1])/len(aux[4])**2}')
+    print(f'[{dt.datetime.now():%H:%M:%S}] ---DiCo 1---')
     # ### DWCM
 
     
     # #### Pytorch, $\theta$
-    print(f'{dt.datetime.now():%H:%M:%S} DWCM, pytorch, theta')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, pytorch, theta')
     if not os.path.exists(HOME+f'/test/crisis_dwcm_old_theta.pkl'):
         dwcm_old=DWCMModel(aux[2], aux[3])
         dwcm_old.solve_tool(tol=1e-5, max_iter=10000, backend='pytorch')
@@ -92,7 +92,7 @@ def main():
             pickle.dump(dwcm_old, f)
     
     # #### Pytorch, GS
-    print(f'{dt.datetime.now():%H:%M:%S} DWCM, pytorch, GS')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, pytorch, GS')
     if not os.path.exists(HOME+f'/test/crisis_dwcm_old_gs.pkl'):
         dwcm_old2=DWCMModel(aux[2], aux[3])
         dwcm_old2.solve_tool(tol=1e-5, max_iter=10000, backend='pytorch', variant='gauss-seidel')
@@ -101,7 +101,7 @@ def main():
             pickle.dump(dwcm_old2, f)
 
     # #### Numba, $\theta$, n_procs=8
-    print(f'{dt.datetime.now():%H:%M:%S} DWCM, numba, theta, n_procs=8')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, theta, n_procs=8')
     dwcm=DWCMModel(aux[2], aux[3])
     nprocs=8
     dwcm.solve_tool(tol=1e-5, max_iter=10000, nprocs=nprocs, backend='numba')
@@ -110,7 +110,7 @@ def main():
         pickle.dump(dwcm, f)
 
     # #### Numba, $\theta$, n_procs=1
-    print(f'{dt.datetime.now():%H:%M:%S} DWCM, numba, theta, n_procs=1')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, theta, n_procs=1')
     dwcm=DWCMModel(aux[2], aux[3])
     nprocs=1
     dwcm.solve_tool(tol=1e-5, max_iter=10000, nprocs=nprocs, backend='numba')
@@ -119,7 +119,7 @@ def main():
         pickle.dump(dwcm, f)
 
     # #### Numba, GS, n_procs=8
-    print(f'{dt.datetime.now():%H:%M:%S} DWCM, numba, GS, n_procs=8')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, GS, n_procs=8')
     nprocs=8
     dwcm_gs=DWCMModel(aux[2], aux[3])
     dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', nprocs=nprocs, backend='numba')
@@ -128,7 +128,7 @@ def main():
         pickle.dump(dwcm_gs, f)
 
     # #### Numba, GS, n_procs=1
-    print(f'{dt.datetime.now():%H:%M:%S} DWCM, numba, GS, n_procs=1')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, GS, n_procs=1')
     nprocs=1
     dwcm_gs=DWCMModel(aux[2], aux[3])
     dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', nprocs=nprocs, backend='numba')
