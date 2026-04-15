@@ -104,7 +104,7 @@ def main():
     print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, theta, n_procs=8')
     dwcm=DWCMModel(aux[2], aux[3])
     nprocs=8
-    dwcm.solve_tool(tol=1e-5, max_iter=10000, nprocs=nprocs, backend='numba')
+    dwcm.solve_tool(tol=1e-5, max_iter=10000, num_threads=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k
     with open(HOME+f'/test/crisis_dwcm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm, f)
@@ -113,7 +113,7 @@ def main():
     print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, theta, n_procs=1')
     dwcm=DWCMModel(aux[2], aux[3])
     nprocs=1
-    dwcm.solve_tool(tol=1e-5, max_iter=10000, nprocs=nprocs, backend='numba')
+    dwcm.solve_tool(tol=1e-5, max_iter=10000, num_threads=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k
     with open(HOME+f'/test/crisis_dwcm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm, f)
@@ -122,7 +122,7 @@ def main():
     print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, GS, n_procs=8')
     nprocs=8
     dwcm_gs=DWCMModel(aux[2], aux[3])
-    dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', nprocs=nprocs, backend='numba')
+    dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', num_threads=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k, but with GS
     with open(HOME+f'/test/crisis_dwcm_new_gs_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm_gs, f)
@@ -131,7 +131,7 @@ def main():
     print(f'[{dt.datetime.now():%H:%M:%S}] DWCM, numba, GS, n_procs=1')
     nprocs=1
     dwcm_gs=DWCMModel(aux[2], aux[3])
-    dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', nprocs=nprocs, backend='numba')
+    dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', num_threads=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k, but with GS
     with open(HOME+f'/test/crisis_dwcm_new_gs_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm_gs, f)
