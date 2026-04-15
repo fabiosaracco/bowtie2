@@ -103,7 +103,7 @@ def main():
     nprocs=8
     dwcm.solve_tool(tol=1e-5, max_iter=10000, nprocs=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k
-    with open(f'crisis_dwcm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
+    with open(HOME+f'/test/crisis_dwcm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm, f)
 
     # #### Numba, $\theta$, n_procs=1
@@ -111,7 +111,7 @@ def main():
     nprocs=1
     dwcm.solve_tool(tol=1e-5, max_iter=10000, nprocs=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k
-    with open(f'crisis_dwcm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
+    with open(HOME+f'/test/crisis_dwcm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm, f)
 
     # #### Numba, GS, n_procs=8
@@ -119,7 +119,7 @@ def main():
     dwcm_gs=DWCMModel(aux[2], aux[3])
     dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', nprocs=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k, but with GS
-    with open(f'crisis_dwcm_new_gs_nprocs_{nprocs}.pkl', 'wb') as f:
+    with open(HOME+f'/test/crisis_dwcm_new_gs_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm_gs, f)
 
     # #### Numba, GS, n_procs=1
@@ -127,7 +127,7 @@ def main():
     dwcm_gs=DWCMModel(aux[2], aux[3])
     dwcm_gs.solve_tool(tol=1e-5, max_iter=10000, variant='gauss-seidel', nprocs=nprocs, backend='numba')
     # with backend='auto' (default), that is numba for N>5k, but with GS
-    with open(f'crisis_dwcm_new_gs_nprocs_{nprocs}.pkl', 'wb') as f:
+    with open(HOME+f'/test/crisis_dwcm_new_gs_nprocs_{nprocs}.pkl', 'wb') as f:
         pickle.dump(dwcm_gs, f)
 
 
