@@ -1,0 +1,4 @@
+#.gitignore
+.ipynb_checkpoints/
+dati_elezioni/
+test/

@@ -100,7 +100,7 @@ def main():
     decm=DECMModel(aux[0], aux[1], aux[2], aux[3])
     nprocs=0
     try:
-        decm.solve_tool(tol=1e-5, max_iter=10000, num_threads=0, backend='numba', num_threads=0)
+        decm.solve_tool(tol=1e-5, max_iter=10000, backend='numba', num_threads=0)
         # with backend='auto' (default), that is numba for N>5k
         with open(HOME+f'/test/crisis_decm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
             pickle.dump(decm, f)
