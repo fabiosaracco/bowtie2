@@ -79,7 +79,7 @@ def main():
     # Number of nodes, Number of edges, edge density
     print(f'[{dt.datetime.now():%H:%M:%S}] Number of nodes: {len(aux[4])}, Number of edges: {len(el_dico[1])}, Edge density: {len(el_dico[1])/len(aux[4])**2:.2e}')
     print(f'[{dt.datetime.now():%H:%M:%S}] ---DiCo 1---')
-    # ### DWCM
+    # ### aDECM
 
     
     # #### Pytorch, $\theta$
