@@ -1,11 +1,18 @@
 import os, sys
+import platform
 import numpy as np
 import pickle 
 import datetime as dt
 from collections import defaultdict
 from dcms.models import DCMModel, DECMModel, ADECMModel, DWCMModel
 
-HOME='/home/sarawalk/bowtie2_py39/bowtie2/'
+if platform.system() == 'Darwin':
+    HOME = '/Users/fabio/Documents/Lavoro/PythonFiles/bowtie2_py310/bowtie2/'
+elif platform.system() == 'Linux':
+    HOME = '/home/sarawalk/bowtie2_py39/bowtie2/'
+else:
+    raise RuntimeError(f"Unsupported OS: {platform.system()}")
+
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
