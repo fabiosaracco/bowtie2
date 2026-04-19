@@ -16,6 +16,8 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
+MAX_TIME_HOURS=6
+
 def main():
     files=os.listdir(DATA_FOLDER)
     files.sort()
@@ -90,11 +92,11 @@ def main():
 
     
     # #### Pytorch, $\theta$
-    print(f'[{dt.datetime.now():%H:%M:%S}] DECM, pytorch, theta')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
     if not os.path.exists(HOME+f'/test/crisis_decm_old_theta.pkl'):
         decm_old=DECMModel(aux[0], aux[1], aux[2], aux[3])
         try:
-            decm_old.solve_tool(tol=1e-5, backend='pytorch', verbose=True)
+            decm_old.solve_tool(tol=1e-5, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600)
         except Exception as e:
             print(f'Error solving DECM with pytorch and theta: {e}')
         # with backend='pytorch'
@@ -103,11 +105,11 @@ def main():
     
     
     # #### Numba, $\theta$, n_procs=8
-    print(f'[{dt.datetime.now():%H:%M:%S}] DECM, numba, theta, n_procs=infinity (autodetect)')
+    print(f'[{dt.datetime.now():%H:%M:%S}] DECM, numba, theta, n_procs=infinity (autodetect) (max: {MAX_TIME_HOURS:} hours)')
     decm=DECMModel(aux[0], aux[1], aux[2], aux[3])
     nprocs=0
     try:
-        decm.solve_tool(tol=1e-5, backend='numba', num_threads=0, verbose=True)
+        decm.solve_tool(tol=1e-5, backend='numba', num_threads=0, verbose=True, max_time=MAX_TIME_HOURS*3600)
     except Exception as e:
         print(f'Error solving DECM with numba and theta: {e}')
     # with backend='auto' (default), that is numba for N>5k
