@@ -94,12 +94,12 @@ def main():
     if not os.path.exists(HOME+f'/test/crisis_decm_old_theta.pkl'):
         decm_old=DECMModel(aux[0], aux[1], aux[2], aux[3])
         try:
-            decm_old.solve_tool(tol=1e-5, max_iter=10000, backend='pytorch')
-            # with backend='pytorch'
-            with open(HOME+f'/test/crisis_decm_old_theta.pkl', 'wb') as f:
-                pickle.dump(decm_old, f)
+            decm_old.solve_tool(tol=1e-5, backend='pytorch', verbose=True)
         except Exception as e:
             print(f'Error solving DECM with pytorch and theta: {e}')
+        # with backend='pytorch'
+        with open(HOME+f'/test/crisis_decm_old_theta.pkl', 'wb') as f:
+            pickle.dump(decm_old, f)
     
     
     # #### Numba, $\theta$, n_procs=8
@@ -107,12 +107,12 @@ def main():
     decm=DECMModel(aux[0], aux[1], aux[2], aux[3])
     nprocs=0
     try:
-        decm.solve_tool(tol=1e-5, max_iter=10000, backend='numba', num_threads=0)
-        # with backend='auto' (default), that is numba for N>5k
-        with open(HOME+f'/test/crisis_decm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
-            pickle.dump(decm, f)
+        decm.solve_tool(tol=1e-5, backend='numba', num_threads=0, verbose=True)
     except Exception as e:
         print(f'Error solving DECM with numba and theta: {e}')
+    # with backend='auto' (default), that is numba for N>5k
+    with open(HOME+f'/test/crisis_decm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
+        pickle.dump(decm, f)
 
 
 def el2ks(el):
