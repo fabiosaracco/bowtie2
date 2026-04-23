@@ -20,7 +20,7 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-MAX_TIME_HOURS=12
+MAX_TIME_HOURS=6
 
 def main():
     files=os.listdir(DATA_FOLDER)
@@ -89,7 +89,7 @@ def main():
         dicos.sort()
         
         for d in dicos:
-            print(f'{d}, {el_dico[d]:8,d}')
+            print(f'{d}, {len(el_dico[d]):8,d}')
 
 
         
