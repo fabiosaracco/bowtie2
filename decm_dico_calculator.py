@@ -20,6 +20,8 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
+MAX_TIME_HOURS=12
+
 def main():
     files=os.listdir(DATA_FOLDER)
     files.sort()
@@ -28,14 +30,14 @@ def main():
     # - ???_dicos.csv: DiCo information per node
     # - ???_weighted_edgelist.csv: edge list with columns source_id, target_id, weight
 
-    for i in range(len(files)/2):
+    for i in range(len(files)//2):
         dico_file = files[2*i]
         el_file = files[2*i + 1]
-        dataset_name=dico_file[:-9]
-        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] {dataset_name}')
+        dataset_name=dico_file[:-10]
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] {dataset_name.title()}')
 
         # Load the DiCo information
-        dico=np.genfromtxt(DATA_FOLDER+files[i_file], delimiter=',',skip_header=1, autostrip=True, dtype=[('user_id', '>U50'), ('dico', '>U2'), ('h_dico', 'U2'), ('i_dico', 'U2')])
+        dico=np.genfromtxt(DATA_FOLDER+dico_file, delimiter=',',skip_header=1, autostrip=True, dtype=[('user_id', '>U50'), ('dico', '>U2'), ('h_dico', 'U2'), ('i_dico', 'U2')])
         
         # Load the edge list
         el=np.genfromtxt(DATA_FOLDER+el_file, delimiter=',', skip_header=1,autostrip=True, dtype=[('source_id', '>U50'), ('target_id', '>U20'),('weight', 'i4')])
@@ -52,13 +54,15 @@ def main():
                     bad_dicos.append(d['dico'])
 
         cacca=np.unique(list(dico_dict.values()), return_counts=True)
-        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DiCo nodes distribution: {np.vstack(cacca).T}')
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DiCo nodes distribution:') 
+        for entry in np.vstack(cacca).T:
+            print(f'{entry[0]}, {entry[1]:,}')
 
         # Nodes
         n_nodes=np.concatenate((el['source_id'], el['target_id']))
         n_nodes=np.unique(n_nodes)
 
-        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(n_nodes):,}, N(nodes in dico)={len(dico_dict):,}, share={len(dico_dict)/len(n_nodes):.2f}')
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(n_nodes):,}, N(nodes in dico)={len(dico_dict):,}, share={len(dico_dict)/len(n_nodes):.3f}')
 
         # Edges
         
@@ -78,11 +82,17 @@ def main():
 
         del _tmp
 
-        cacca=np.array([key, len(el_dico[key]) for key in el_dico.keys()])
+        cacca=np.array([[key, len(el_dico[key])] for key in el_dico.keys()])
     
-        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DiCo edges distribution: {cacca}')
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DiCo edges distribution:') 
+        for entry in cacca:
+            print(f'{entry[0]}, {entry[1]:,}')
 
-        for dico_class, edges in el_dico.items():
+
+        dicos=list(el_dico.keys())
+        dicos.sort()
+        
+        for dico_class in dicos:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo class {dico_class}...')
             aux=el2ks(el_dico[dico_class])
             # consistency checks: topology
@@ -90,7 +100,7 @@ def main():
             # consistency checks: weights
             assert aux[2].sum()==aux[3].sum()
 
-            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4])}, N(edges)={len(el_dico[dico_class])}, density={len(el_dico[dico_class])/len(aux[4])**2}')
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
 
             print(f'[{dt.datetime.now():%H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
 

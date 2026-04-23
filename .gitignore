@@ -3,3 +3,4 @@
 dati_elezioni/
 tests/
 logs/
+__pycache__/
