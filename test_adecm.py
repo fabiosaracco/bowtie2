@@ -94,7 +94,7 @@ def main():
     if not os.path.exists(HOME+f'/test/crisis_adecm_old_theta.pkl'):
         adecm_old=ADECMModel(aux[0], aux[1], aux[2], aux[3])
         try:
-            adecm_old.solve_tool(tol=1e-5, max_iter=10000, backend='pytorch')
+            adecm_old.solve_tool(tol=1e-5, max_iter=10000, backend='pytorch', verbose=True)
             # with backend='pytorch'
             with open(HOME+f'/test/crisis_adecm_old_theta.pkl', 'wb') as f:
                 pickle.dump(adecm_old, f)
@@ -107,7 +107,7 @@ def main():
     adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
     nprocs=8
     try:
-        adecm.solve_tool(tol=1e-5, max_iter=10000, num_threads=nprocs, backend='numba')
+        adecm.solve_tool(tol=1e-5, max_iter=10000, num_threads=nprocs, backend='numba', verbose=True)
         # with backend='auto' (default), that is numba for N>5k
         with open(HOME+f'/test/crisis_adecm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
             pickle.dump(adecm, f)
