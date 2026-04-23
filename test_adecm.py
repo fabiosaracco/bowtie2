@@ -103,7 +103,7 @@ def main():
     
     
     # #### Numba, $\theta$, n_procs=8
-    print(f'[{dt.datetime.now():%H:%M:%S}] ADECM, numba, theta, n_procs=8')
+    print(f'[{dt.datetime.now():%H:%M:%S}] ADECM, numba, theta, n_procs=infinity')
     adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
     nprocs=0
     try:
