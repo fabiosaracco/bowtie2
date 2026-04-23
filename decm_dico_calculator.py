@@ -103,12 +103,12 @@ def main():
 
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
 
-            print(f'[{dt.datetime.now():%H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
 
             decm=DECMModel(aux[0], aux[1], aux[2], aux[3])
 
             try:
-                decm.solve_tool(tol=1e-6, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600)
+                decm.solve_tool(tol=1e-6, backend='pytorch', max_time=MAX_TIME_HOURS*3600)
             except Exception as e:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving DECM with pytorch and theta: {e}')
             # with backend='pytorch'
@@ -124,10 +124,11 @@ def main():
             else:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM did not converge in {eth:2d} h and {etm:2d} m, MRE={decm.max_relative_error(decm.sol.theta):.2e} (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Trying aDECM...')
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] aDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
                 adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
 
                 try:
-                    adecm.solve_tool(tol=1e-6, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600)
+                    adecm.solve_tool(tol=1e-6, backend='pytorch', max_time=MAX_TIME_HOURS*3600)
                 except Exception as e:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving ADECM with pytorch and theta: {e}')
                 # with backend='pytorch'
