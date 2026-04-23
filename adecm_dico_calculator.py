@@ -108,8 +108,11 @@ def main():
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
             sys.stdout.flush()
 
+            adecm_filename=HOME+f'/test/{dataset_name}_dico{dico_class}_adecm.pkl'
+            if os.path.exists(adecm_filename):
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM solution already exists for DiCo class {dico_class}, skipping...')
+                continue
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] aDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
-
             adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
 
             
@@ -119,7 +122,8 @@ def main():
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving ADECM with pytorch and theta: {e}')
                 sys.stdout.flush()
             # with backend='pytorch'
-            with open(HOME+f'/test/{dataset_name}_dico{dico_class}_adecm.pkl', 'wb') as f:
+            
+            with open(adecm_filename, 'wb') as f:
                 pickle.dump(adecm, f)
             # elapsed time (in hours and minutes)
             t_ets=adecm.sol_topo.elapsed_time+adecm.sol_weights.elapsed_time
