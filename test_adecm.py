@@ -15,6 +15,7 @@ else:
 
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
+MAX_TIME_HOURS=3
 
 def main():
     files=os.listdir(DATA_FOLDER)
@@ -94,25 +95,24 @@ def main():
     if not os.path.exists(HOME+f'/test/crisis_adecm_old_theta.pkl'):
         adecm_old=ADECMModel(aux[0], aux[1], aux[2], aux[3])
         try:
-            adecm_old.solve_tool(tol=1e-4, backend='pytorch', verbose=True)
-            # with backend='pytorch'
-            with open(HOME+f'tests/crisis_adecm_old_theta.pkl', 'wb') as f:
-                pickle.dump(adecm_old, f)
+            adecm_old.solve_tool(tol=1e-4, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600)
         except Exception as e:
             print(f'Error solving aDECM with pytorch and theta: {e}')
+        with open(HOME+f'tests/crisis_adecm_old_theta.pkl', 'wb') as f:
+            pickle.dump(adecm_old, f)
     
     
     # #### Numba, $\theta$, n_procs=8
     print(f'[{dt.datetime.now():%H:%M:%S}] ADECM, numba, theta, n_procs=8')
     adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
-    nprocs=8
+    nprocs=0
     try:
-        adecm.solve_tool(tol=1e-4, num_threads=nprocs, backend='numba', verbose=True)
-        # with backend='auto' (default), that is numba for N>5k
-        with open(HOME+f'tests/crisis_adecm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
-            pickle.dump(adecm, f)
+        adecm.solve_tool(tol=1e-4, num_threads=nprocs, backend='numba', verbose=True, max_time=MAX_TIME_HOURS*3600)
     except Exception as e:
         print(f'Error solving aDECM with numba and theta: {e}')
+    
+    with open(HOME+f'tests/crisis_adecm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
+        pickle.dump(adecm, f)
 
 
 def el2ks(el):
