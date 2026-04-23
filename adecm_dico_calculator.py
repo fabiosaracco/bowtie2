@@ -44,6 +44,7 @@ def main():
 
         # Select correct dicos
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Selecting only interpretable dicos...')
+        sys.stdout.flush()
         dico_dict={}
         bad_dicos=[]
         for d in dico:
@@ -57,6 +58,7 @@ def main():
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DiCo nodes distribution:') 
         for entry in np.vstack(cacca).T:
             print(f'{entry[0]}, {entry[1]:7,d}')
+        sys.stdout.flush()
 
         # Nodes
         n_nodes=np.concatenate((el['source_id'], el['target_id']))
@@ -90,11 +92,13 @@ def main():
         
         for d in dicos:
             print(f'{d}, {len(el_dico[d]):8,d}')
+        sys.stdout.flush()
 
 
         
         for dico_class in dicos:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo class {dico_class}...')
+            sys.stdout.flush()
             aux=el2ks(el_dico[dico_class])
             # consistency checks: topology
             assert aux[0].sum()==aux[1].sum()==len(el_dico[dico_class])
@@ -102,6 +106,7 @@ def main():
             assert aux[2].sum()==aux[3].sum()
 
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
+            sys.stdout.flush()
 
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
 
@@ -112,6 +117,7 @@ def main():
                 adecm.solve_tool(tol=1e-6, backend='pytorch', max_time=MAX_TIME_HOURS*3600)
             except Exception as e:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving ADECM with pytorch and theta: {e}')
+                sys.stdout.flush()
             # with backend='pytorch'
             with open(HOME+f'/test/{dataset_name}_dico{dico_class}_adecm.pkl', 'wb') as f:
                 pickle.dump(adecm, f)
@@ -122,8 +128,10 @@ def main():
             
             if adecm.sol_topo.converged and adecm.sol_weights.converged:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM converged in {eth:2d} h and {etm:2d} m, MRE(degrees)={adecm.constraint_error_topology(adecm.sol_topo.theta):.2e}, MRE(strengths)={adecm.constraint_error_strength(adecm.sol_topo.theta, adecm.sol_weights.theta):.2e} (peak RAM={adecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {adecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+                sys.stdout.flush()
             else:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM did not converge in {eth:2d} h and {etm:2d} m, MRE(degrees)={adecm.constraint_error_topology(adecm.sol_topo.theta):.2e}, MRE(strengths)={adecm.constraint_error_strength(adecm.sol_topo.theta, adecm.sol_weights.theta):.2e} (peak RAM={adecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {adecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+                sys.stdout.flush()
 
     
 
