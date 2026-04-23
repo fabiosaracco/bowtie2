@@ -96,7 +96,7 @@ def main():
         try:
             adecm_old.solve_tool(tol=1e-5, max_iter=10000, backend='pytorch', verbose=True)
             # with backend='pytorch'
-            with open(HOME+f'/test/crisis_adecm_old_theta.pkl', 'wb') as f:
+            with open(HOME+f'tests/crisis_adecm_old_theta.pkl', 'wb') as f:
                 pickle.dump(adecm_old, f)
         except Exception as e:
             print(f'Error solving aDECM with pytorch and theta: {e}')
@@ -109,7 +109,7 @@ def main():
     try:
         adecm.solve_tool(tol=1e-5, max_iter=10000, num_threads=nprocs, backend='numba', verbose=True)
         # with backend='auto' (default), that is numba for N>5k
-        with open(HOME+f'/test/crisis_adecm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
+        with open(HOME+f'tests/crisis_adecm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
             pickle.dump(adecm, f)
     except Exception as e:
         print(f'Error solving aDECM with numba and theta: {e}')
