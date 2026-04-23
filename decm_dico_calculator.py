@@ -85,12 +85,13 @@ def main():
         cacca=np.array([[key, len(el_dico[key])] for key in el_dico.keys()])
     
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DiCo edges distribution:') 
-        for entry in cacca:
-            print(f'{entry[0]}, {entry[1]:8,d}')
-
-
         dicos=list(el_dico.keys())
         dicos.sort()
+        
+        for d in dicos:
+            print(f'{d}, {el_dico[d]:8,d}')
+
+
         
         for dico_class in dicos:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo class {dico_class}...')
