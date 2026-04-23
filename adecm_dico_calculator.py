@@ -108,13 +108,13 @@ def main():
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
             sys.stdout.flush()
 
-            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] aDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
 
             adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
 
             
             try:
-                adecm.solve_tool(tol=1e-6, backend='pytorch', max_time=MAX_TIME_HOURS*3600)
+                adecm.solve_tool(tol=1e-6, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True)
             except Exception as e:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving ADECM with pytorch and theta: {e}')
                 sys.stdout.flush()
