@@ -77,16 +77,16 @@ def main():
     del _tmp
 
 
+    dico_index=0
+    aux=el2ks(el_dico[dico_index])
 
-    aux=el2ks(el_dico[1])# DiCo 1
-
-    assert aux[0].sum()==aux[1].sum()==len(el_dico[1])
+    assert aux[0].sum()==aux[1].sum()==len(el_dico[dico_index])
 
     assert aux[2].sum()==aux[3].sum()
 
     # Number of nodes, Number of edges, edge density
     print(f'[{dt.datetime.now():%H:%M:%S}] Number of nodes: {len(aux[4])}, Number of edges: {len(el_dico[1])}, Edge density: {len(el_dico[1])/len(aux[4])**2:.2e}')
-    print(f'[{dt.datetime.now():%H:%M:%S}] ---DiCo 1---')
+    print(f'[{dt.datetime.now():%H:%M:%S}] ---DiCo {dico_index}---')
     # ### aDECM
 
     
@@ -98,7 +98,7 @@ def main():
             adecm_old.solve_tool(tol=1e-4, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600)
         except Exception as e:
             print(f'Error solving aDECM with pytorch and theta: {e}')
-        with open(HOME+f'tests/crisis_adecm_old_theta.pkl', 'wb') as f:
+        with open(HOME+f'tests/crisis_adecm_old_theta_dico{dico_index}.pkl', 'wb') as f:
             pickle.dump(adecm_old, f)
     
     
@@ -111,7 +111,7 @@ def main():
     except Exception as e:
         print(f'Error solving aDECM with numba and theta: {e}')
     
-    with open(HOME+f'tests/crisis_adecm_new_theta_nprocs_{nprocs}.pkl', 'wb') as f:
+    with open(HOME+f'tests/crisis_adecm_new_theta_nprocs_{nprocs}_dico{dico_index}.pkl', 'wb') as f:
         pickle.dump(adecm, f)
 
 
