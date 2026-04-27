@@ -112,8 +112,15 @@ def main():
             if len(aux[4])>5*10**4:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
                 continue
+            adecm_filename=HOME+f'/test/{dataset_name}_dico{dico_class}_adecm.pkl'
+            if os.path.exists(adecm_filename):
+                _message=(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM solution already exists for DiCo class {dico_class}, skipping? (Y/n)')
+                _yn=input(message)
+                while _yn not in ['Y', 'n', 'y', '']:
+                    _yn=input(message)
+                if _yn=='n':
+                    continue
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] aDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
-
             adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
 
             
