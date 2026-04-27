@@ -127,24 +127,25 @@ def main():
             
             try:
                 adecm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=False, gauge_pivot='min')
+                with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_adecm.pkl', 'wb') as f:
+                    pickle.dump(adecm, f)
+                # elapsed time (in hours and minutes)
+                t_ets=adecm.sol_topo.elapsed_time+adecm.sol_weights.elapsed_time
+                eth=t_ets//3600
+                etm=(t_ets % 3600)/60
+            
+                if adecm.sol_topo.converged and adecm.sol_weights.converged:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={adecm.constraint_error_topology(adecm.sol_topo.theta):.2e}, MRE(strengths)={adecm.constraint_error_strength(adecm.sol_topo.theta, adecm.sol_weights.theta):.2e} (peak RAM={adecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {adecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+                    sys.stdout.flush()
+                else:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={adecm.constraint_error_topology(adecm.sol_topo.theta):.2e}, MRE(strengths)={adecm.constraint_error_strength(adecm.sol_topo.theta, adecm.sol_weights.theta):.2e} (peak RAM={adecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {adecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+                    sys.stdout.flush()
+
             except Exception as e:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving ADECM with pytorch and theta: {e}')
                 sys.stdout.flush()
-            # with backend='pytorch'
-            with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_adecm.pkl', 'wb') as f:
-                pickle.dump(adecm, f)
-            # elapsed time (in hours and minutes)
-            t_ets=adecm.sol_topo.elapsed_time+adecm.sol_weights.elapsed_time
-            eth=t_ets//3600
-            etm=(t_ets % 3600)/60
             
-            if adecm.sol_topo.converged and adecm.sol_weights.converged:
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={adecm.constraint_error_topology(adecm.sol_topo.theta):.2e}, MRE(strengths)={adecm.constraint_error_strength(adecm.sol_topo.theta, adecm.sol_weights.theta):.2e} (peak RAM={adecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {adecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
-                sys.stdout.flush()
-            else:
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ADECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={adecm.constraint_error_topology(adecm.sol_topo.theta):.2e}, MRE(strengths)={adecm.constraint_error_strength(adecm.sol_topo.theta, adecm.sol_weights.theta):.2e} (peak RAM={adecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {adecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
-                sys.stdout.flush()
-
+            
     
 
 
