@@ -95,7 +95,7 @@ def main():
     if not os.path.exists(HOME+f'/test/crisis_adecm_old_theta.pkl'):
         adecm_old=ADECMModel(aux[0], aux[1], aux[2], aux[3])
         try:
-            adecm_old.solve_tool(tol=1e-4, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600)
+            adecm_old.solve_tool(tol=1e-4, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600, gauge_pivot='min')
         except Exception as e:
             print(f'Error solving aDECM with pytorch and theta: {e}')
         with open(HOME+f'tests/crisis_adecm_old_theta_dico{dico_index}.pkl', 'wb') as f:
