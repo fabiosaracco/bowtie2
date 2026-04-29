@@ -126,7 +126,7 @@ def main():
 
             
             try:
-                decm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=False, gauge_pivot='min')
+                decm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=False)
                 with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_decm.pkl', 'wb') as f:
                     pickle.dump(decm, f)
                 # elapsed time (in hours and minutes)
