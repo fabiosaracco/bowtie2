@@ -21,7 +21,7 @@ sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 TEST_FOLDER=HOME+'tests/'
 
-MAX_TIME_HOURS=1
+MAX_TIME_HOURS=2
 
 def main():
     files=os.listdir(DATA_FOLDER)
