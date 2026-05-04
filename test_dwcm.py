@@ -4,7 +4,7 @@ import numpy as np
 import pickle 
 import datetime as dt
 from collections import defaultdict
-from dcms.models import DCMModel, DECMModel, ADECMModel, DWCMModel
+from dcms.models import DCMModel, DECMModel, qDECMModel, DWCMModel
 
 if platform.system() == 'Darwin':
     HOME = '/Users/fabio/Documents/Lavoro/PythonFiles/bowtie2_py310/bowtie2/'

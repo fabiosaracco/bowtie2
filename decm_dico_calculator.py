@@ -5,7 +5,7 @@ import pickle
 import datetime as dt
 from collections import defaultdict
 
-from dcms.models import DCMModel, DECMModel, ADECMModel, DWCMModel
+from dcms.models import DCMModel, DECMModel, qDECMModel, DWCMModel
 
 from auxiliary_functions import el2ks
 

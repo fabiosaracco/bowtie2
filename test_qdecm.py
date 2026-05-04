@@ -4,7 +4,7 @@ import numpy as np
 import pickle 
 import datetime as dt
 from collections import defaultdict
-from dcms.models import DCMModel, DECMModel, ADECMModel, DWCMModel
+from dcms.models import DCMModel, DECMModel, qDECMModel, DWCMModel
 
 if platform.system() == 'Darwin':
     HOME = '/Users/fabio/Documents/Lavoro/PythonFiles/bowtie2_py310/bowtie2/'
@@ -87,32 +87,32 @@ def main():
     # Number of nodes, Number of edges, edge density
     print(f'[{dt.datetime.now():%H:%M:%S}] Number of nodes: {len(aux[4])}, Number of edges: {len(el_dico[1])}, Edge density: {len(el_dico[1])/len(aux[4])**2:.2e}')
     print(f'[{dt.datetime.now():%H:%M:%S}] ---DiCo {dico_index}---')
-    # ### aDECM
+    # ### qDECM
 
     
     # #### Pytorch, $\theta$
-    print(f'[{dt.datetime.now():%H:%M:%S}] aDECM, pytorch, theta')
-    if not os.path.exists(HOME+f'/test/crisis_adecm_old_theta.pkl'):
-        adecm_old=ADECMModel(aux[0], aux[1], aux[2], aux[3])
+    print(f'[{dt.datetime.now():%H:%M:%S}] qDECM, pytorch, theta')
+    if not os.path.exists(HOME+f'/test/crisis_qdecm_old_theta.pkl'):
+        qdecm_old=qDECMModel(aux[0], aux[1], aux[2], aux[3])
         try:
-            adecm_old.solve_tool(tol=1e-4, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600, gauge_pivot='min')
+            qdecm_old.solve_tool(tol=1e-4, backend='pytorch', verbose=True, max_time=MAX_TIME_HOURS*3600, gauge_pivot='min')
         except Exception as e:
-            print(f'Error solving aDECM with pytorch and theta: {e}')
-        with open(HOME+f'tests/crisis_adecm_old_theta_dico{dico_index}.pkl', 'wb') as f:
-            pickle.dump(adecm_old, f)
+            print(f'Error solving qDECM with pytorch and theta: {e}')
+        with open(HOME+f'tests/crisis_qdecm_old_theta_dico{dico_index}.pkl', 'wb') as f:
+            pickle.dump(qdecm_old, f)
     
     
     # #### Numba, $\theta$, n_procs=8
-    print(f'[{dt.datetime.now():%H:%M:%S}] ADECM, numba, theta, n_procs=infinity')
-    adecm=ADECMModel(aux[0], aux[1], aux[2], aux[3])
+    print(f'[{dt.datetime.now():%H:%M:%S}] QDECM, numba, theta, n_procs=infinity')
+    qdecm=qDECMModel(aux[0], aux[1], aux[2], aux[3])
     nprocs=0
     try:
-        adecm.solve_tool(tol=1e-4, num_threads=nprocs, backend='numba', verbose=True, max_time=MAX_TIME_HOURS*3600)
+        qdecm.solve_tool(tol=1e-4, num_threads=nprocs, backend='numba', verbose=True, max_time=MAX_TIME_HOURS*3600)
     except Exception as e:
-        print(f'Error solving aDECM with numba and theta: {e}')
+        print(f'Error solving qDECM with numba and theta: {e}')
     
-    with open(HOME+f'tests/crisis_adecm_new_theta_nprocs_{nprocs}_dico{dico_index}.pkl', 'wb') as f:
-        pickle.dump(adecm, f)
+    with open(HOME+f'tests/crisis_qdecm_new_theta_nprocs_{nprocs}_dico{dico_index}.pkl', 'wb') as f:
+        pickle.dump(qdecm, f)
 
 
 def el2ks(el):
