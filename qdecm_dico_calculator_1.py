@@ -20,7 +20,7 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-MAX_TIME_HOURS=6
+MAX_TIME_HOURS=1
 
 def main():
     files=os.listdir(DATA_FOLDER)
@@ -109,24 +109,26 @@ def main():
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
             sys.stdout.flush()
 
-            #if len(aux[4])>5*10**4:
-            #    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
-            #    continue
+            if len(aux[4])>5*10**4:
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
+                continue
             qdecm_filename=HOME+f'/test/{dataset_name}_dico{dico_class}_qdecm.pkl'
             if os.path.exists(qdecm_filename):
-                #_message=(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM solution already exists for DiCo class {dico_class}, skipping? (Y/n)')
-                #_yn=input(message)
-                #while _yn not in ['Y', 'n', 'y', '']:
-                #    _yn=input(message)
-                #if _yn=='n':
-                #    continue
-                continue
+                with open(qdecm_filename, 'rb') as f:
+                    old_qdecm=pickle.load(f)
+                if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for qDECM with pytorch and theta already exists. Skipping...')
+                    sys.stdout.flush()
+                    continue
+                else:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A non-converged solution for qDECM with pytorch and theta already exists. Recomputing...')
+                    sys.stdout.flush()
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] qDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
             qdecm=qDECMModel(aux[0], aux[1], aux[2], aux[3])
 
             
             try:
-                qdecm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=False, gauge_pivot='min')
+                qdecm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True)
                 with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_qdecm.pkl', 'wb') as f:
                     pickle.dump(qdecm, f)
                 # elapsed time (in hours and minutes)
