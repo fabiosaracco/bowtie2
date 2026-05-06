@@ -113,7 +113,10 @@ def main():
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
                 continue
             qdecm_filename=HOME+f'/test/{dataset_name}_dico{dico_class}_qdecm.pkl'
-            #if os.path.exists(qdecm_filename):
+            if os.path.exists(qdecm_filename):
+                os.remove(qdecm_filename)
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A solution for qDECM with pytorch and theta already exists. Removing it to recompute...')
+                sys.stdout.flush()
             #    with open(qdecm_filename, 'rb') as f:
             #        old_qdecm=pickle.load(f)
             #    if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
