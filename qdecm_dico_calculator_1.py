@@ -20,7 +20,7 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-MAX_TIME_HOURS=1
+MAX_TIME_HOURS=2
 
 def main():
     files=os.listdir(DATA_FOLDER)
@@ -114,9 +114,16 @@ def main():
                 continue
             qdecm_filename=HOME+f'/test/{dataset_name}_dico{dico_class}_qdecm.pkl'
             if os.path.exists(qdecm_filename):
-                os.remove(qdecm_filename)
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A solution for qDECM with pytorch and theta already exists. Removing it to recompute...')
-                sys.stdout.flush()
+                # check if the file was created/modified today
+                file_mtime = dt.date.fromtimestamp(os.path.getmtime(qdecm_filename))
+                if file_mtime == dt.date.today():
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A solution for qDECM already exists and was created/modified today. Skipping...')
+                    sys.stdout.flush()
+                    continue
+                else:
+                    os.remove(qdecm_filename)
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A solution for qDECM exists but is outdated. Removing it to recompute...')
+                    sys.stdout.flush()
             #    with open(qdecm_filename, 'rb') as f:
             #        old_qdecm=pickle.load(f)
             #    if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
