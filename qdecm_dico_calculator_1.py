@@ -109,30 +109,21 @@ def main():
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
             sys.stdout.flush()
 
-            if len(aux[4])>5*10**4:
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
-                continue
+            #if len(aux[4])>5*10**4:
+            #    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
+            #    continue
             qdecm_filename=HOME+f'/tests/{dataset_name}_dico{dico_class}_qdecm.pkl'
             if os.path.exists(qdecm_filename):
                 # check if the file was created/modified today
                 file_mtime = dt.date.fromtimestamp(os.path.getmtime(qdecm_filename))
                 if file_mtime == dt.date.today():
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A solution for qDECM already exists and was created/modified today. Skipping...')
-                    sys.stdout.flush()
-                    continue
-                else:
-                    os.remove(qdecm_filename)
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A solution for qDECM exists but is outdated. Removing it to recompute...')
-                    sys.stdout.flush()
-            #    with open(qdecm_filename, 'rb') as f:
-            #        old_qdecm=pickle.load(f)
-            #    if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
-            #        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for qDECM with pytorch and theta already exists. Skipping...')
-            #        sys.stdout.flush()
-            #        continue
-            #    else:
-            #        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A non-converged solution for qDECM with pytorch and theta already exists. Recomputing...')
-            #        sys.stdout.flush()
+                    with open(qdecm_filename, 'rb') as f:
+                        old_qdecm=pickle.load(f)
+                    if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
+                        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for qDECM with pytorch and theta already exists. Skipping...')
+                        sys.stdout.flush()
+                        continue
+                
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] qDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
             qdecm=qDECMModel(aux[0], aux[1], aux[2], aux[3])
 
