@@ -112,7 +112,7 @@ def main():
             if len(aux[4])>5*10**4:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
                 continue
-            qdecm_filename=HOME+f'/test/{dataset_name}_dico{dico_class}_qdecm.pkl'
+            qdecm_filename=HOME+f'/tests/{dataset_name}_dico{dico_class}_qdecm.pkl'
             if os.path.exists(qdecm_filename):
                 # check if the file was created/modified today
                 file_mtime = dt.date.fromtimestamp(os.path.getmtime(qdecm_filename))
