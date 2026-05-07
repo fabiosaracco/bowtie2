@@ -115,14 +115,14 @@ def main():
             qdecm_filename=HOME+f'/tests/{dataset_name}_dico{dico_class}_qdecm.pkl'
             if os.path.exists(qdecm_filename):
                 # check if the file was created/modified today
-                file_mtime = dt.date.fromtimestamp(os.path.getmtime(qdecm_filename))
-                if file_mtime == dt.date.today():
-                    with open(qdecm_filename, 'rb') as f:
-                        old_qdecm=pickle.load(f)
-                    if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
-                        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for qDECM with pytorch and theta already exists. Skipping...')
-                        sys.stdout.flush()
-                        continue
+                #file_mtime = dt.date.fromtimestamp(os.path.getmtime(qdecm_filename))
+                #if file_mtime == dt.date.today():
+                with open(qdecm_filename, 'rb') as f:
+                    old_qdecm=pickle.load(f)
+                if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for qDECM with pytorch and theta already exists. Skipping...')
+                    sys.stdout.flush()
+                    continue
                 
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] qDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
             qdecm=qDECMModel(aux[0], aux[1], aux[2], aux[3])
