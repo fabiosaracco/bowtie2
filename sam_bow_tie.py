@@ -22,8 +22,8 @@ def _worker_chunk(args):
     Parameters
     ----------
     args : tuple
-        (sol, n_chunk, seed)
-        - sol     : fitted model object exposing a `.sample()` method that returns
+        (model, n_chunk, seed)
+        - model   : fitted model object exposing a `.sample()` method that returns
                     a weighted edge list as a list of (source, target, weight) triples.
         - n_chunk : number of sampling iterations assigned to this worker.
         - seed    : integer random seed for numpy, drawn independently per worker.
@@ -35,19 +35,19 @@ def _worker_chunk(args):
     fluxes_list : list of dict
         One dict per iteration mapping (block_src, block_tgt) -> total weight flux.
     """
-    sol, n_chunk, seed = args
+    model, n_chunk, seed = args
     np.random.seed(seed)
     blocks_list = []
     fluxes_list = []
     for _ in range(n_chunk):
-        sampled_wel = sol.sample()
+        sampled_wel = model.sample()
         sim_blocks, sim_fluxes = block_and_fluxes(sampled_wel)
         blocks_list.append(dict(sim_blocks))
         fluxes_list.append(dict(sim_fluxes))
     return blocks_list, fluxes_list
 
 
-def validate(weighted_el, sol, n_runs, n_workers=None):
+def validate(weighted_el, model, n_runs, n_workers=None):
     """Perform a Monte Carlo hypothesis test of the bowtie structure.
 
     Compares the empirical bowtie block sizes and inter-block weight fluxes
@@ -67,7 +67,7 @@ def validate(weighted_el, sol, n_runs, n_workers=None):
     ----------
     weighted_el : list of (source, target, weight) triples
         The empirical weighted edge list.
-    sol : model object
+    model : model object
         Fitted model exposing a `.sample()` method (must be picklable so it
         can be sent to subprocess workers).
     n_runs : int
@@ -114,7 +114,7 @@ def validate(weighted_el, sol, n_runs, n_workers=None):
     # Draw fully independent seeds for each worker (not derived from a common base)
     # to avoid correlated pseudo-random sequences across processes.
     seeds = np.random.randint(0, 2**31, size=n_workers).tolist()
-    task_args = [(sol, chunk, seed) for chunk, seed in zip(chunks, seeds)]
+    task_args = [(model, chunk, seed) for chunk, seed in zip(chunks, seeds)]
 
     # Launch workers; map() preserves order, so no synchronisation is needed
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
