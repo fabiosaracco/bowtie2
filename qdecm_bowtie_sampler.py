@@ -84,7 +84,7 @@ def main():
                 #if file_mtime == dt.date.today():
                 with open(qdecm_filename, 'rb') as f:
                     qdecm=pickle.load(f)
-                if hasattr(qdecm.sol, 'sol') and qdecm.sol.converged:
+                if hasattr(qdecm, 'sol') and qdecm.sol.converged:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d} with {len(el_dico[d]):,} edges...')
                     sys.stdout.flush()
                     block_dict, flux_dict=validate(el_dico[dico_class], qdecm.sol, n_runs=2*1000)
