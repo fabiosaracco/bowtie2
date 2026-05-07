@@ -119,7 +119,7 @@ def main():
                 #if file_mtime == dt.date.today():
                 with open(qdecm_filename, 'rb') as f:
                     old_qdecm=pickle.load(f)
-                if old_qdecm.sol.converged:
+                if hasattr(old_qdecm.sol, 'sol') and old_qdecm.sol.converged:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for qDECM with pytorch and theta already exists. Skipping...')
                     sys.stdout.flush()
                     continue
