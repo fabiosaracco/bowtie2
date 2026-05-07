@@ -20,7 +20,7 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-MAX_TIME_HOURS=2
+MAX_TIME_HOURS=3
 
 def main():
     files=os.listdir(DATA_FOLDER)
@@ -129,7 +129,7 @@ def main():
 
             
             try:
-                qdecm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True)
+                qdecm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=False)
                 with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_qdecm.pkl', 'wb') as f:
                     pickle.dump(qdecm, f)
                 # elapsed time (in hours and minutes)
