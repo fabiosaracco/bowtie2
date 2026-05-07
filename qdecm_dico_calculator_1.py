@@ -119,7 +119,7 @@ def main():
                 #if file_mtime == dt.date.today():
                 with open(qdecm_filename, 'rb') as f:
                     old_qdecm=pickle.load(f)
-                if old_qdecm.sol_topo.converged and old_qdecm.sol_weights.converged:
+                if old_qdecm.sol.converged:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for qDECM with pytorch and theta already exists. Skipping...')
                     sys.stdout.flush()
                     continue
@@ -133,15 +133,15 @@ def main():
                 with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_qdecm.pkl', 'wb') as f:
                     pickle.dump(qdecm, f)
                 # elapsed time (in hours and minutes)
-                t_ets=qdecm.sol_topo.elapsed_time+qdecm.sol_weights.elapsed_time
+                t_ets=qdecm.sol.elapsed_time
                 eth=t_ets//3600
                 etm=(t_ets % 3600)/60
             
-                if qdecm.sol_topo.converged and qdecm.sol_weights.converged:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol_topo.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol_topo.theta, qdecm.sol_weights.theta):.2e} (peak RAM={qdecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {qdecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+                if qdecm.sol.converged:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol.theta):.2e} (peak RAM={qdecm.sol.peak_ram_bytes//1024**2} MB)')
                     sys.stdout.flush()
                 else:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol_topo.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol_topo.theta, qdecm.sol_weights.theta):.2e} (peak RAM={qdecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {qdecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol.theta):.2e} (peak RAM={qdecm.sol.peak_ram_bytes//1024**2} MB)')
                     sys.stdout.flush()
 
             except Exception as e:
