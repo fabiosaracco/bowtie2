@@ -4,13 +4,12 @@ import numpy as np
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
-from tqdm import tqdm
 import multiprocessing
 
 from bowtie import edges2bowtie
 
 
-def _worker_chunk(model, all_nodes, emp_bowtie_dict, n_chunk, seed):
+def _worker_chunk(model, all_nodes, emp_bowtie_dict, verbose, worker_id, n_chunk, seed):
     """Worker function executed in a separate process.
 
     Performs `n_chunk` independent sampling iterations:
@@ -29,6 +28,10 @@ def _worker_chunk(model, all_nodes, emp_bowtie_dict, n_chunk, seed):
         Ordered array of node IDs used to remap sampled edge indices.
     emp_bowtie_dict : dict
         Node -> bowtie block mapping of the empirical network.
+    verbose : bool
+        If True, prints a timestamped message at every 10% of the chunk.
+    worker_id : int
+        Index of this worker, used in verbose messages.
     n_chunk : int
         Number of sampling iterations assigned to this worker.
     seed : int
@@ -44,17 +47,22 @@ def _worker_chunk(model, all_nodes, emp_bowtie_dict, n_chunk, seed):
     np.random.seed(seed)
     blocks_list = []
     fluxes_list = []
-    for _ in range(n_chunk):
+    # Compute the iteration indices at which to print progress (every 10%).
+    milestones = set(max(1, round(n_chunk * p / 10)) for p in range(1, 11))
+    for i in range(n_chunk):
         sampled_wel = model.sample()
         # give the right node labels to the sampled edge list (model.sample() returns edges with node indices, we need to map them back to actual node IDs)
         sampled_wel=[(all_nodes[edge[0]], all_nodes[edge[1]], edge[2]) for edge in sampled_wel]
         sim_blocks, sim_fluxes, _ = block_and_fluxes(sampled_wel, original_bowtie_dict=emp_bowtie_dict)
         blocks_list.append(dict(sim_blocks))
         fluxes_list.append(dict(sim_fluxes))
+        if verbose and (i + 1) in milestones:
+            pct = round((i + 1) / n_chunk * 100)
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Worker {worker_id}: {pct}% ({i + 1}/{n_chunk})', flush=True)
     return blocks_list, fluxes_list
 
 
-def validate(weighted_el, model, n_runs, n_workers=None):
+def validate(weighted_el, model, n_runs, n_workers=None, verbose=False):
     """Perform a Monte Carlo hypothesis test of the bowtie structure.
 
     Compares the empirical bowtie block sizes and inter-block weight fluxes
@@ -82,6 +90,9 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     n_workers : int or None
         Number of parallel worker processes. Defaults to the number of
         logical CPU cores. Capped at n_runs if n_runs < n_workers.
+    verbose : bool
+        If True, each worker prints a timestamped message every 10% of its
+        assigned iterations.
 
     Returns
     -------
@@ -130,21 +141,17 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     # to avoid correlated pseudo-random sequences across processes.
     seeds = np.random.randint(0, 2**31, size=n_workers).tolist()
 
-    # Bind the fixed arguments once; each worker only needs (n_chunk, seed).
-    worker = partial(_worker_chunk, model, all_nodes, emp_bowtie_dict)
+    # Bind the fixed arguments once; each worker only needs (worker_id, n_chunk, seed).
+    worker = partial(_worker_chunk, model, all_nodes, emp_bowtie_dict, verbose)
     task_args = list(zip(chunks, seeds))
 
-    # Launch workers and collect results in order, updating the progress bar
-    # as each worker completes (unit = individual sampling iterations).
     futures = [None] * n_workers
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
-        fut_map = {executor.submit(worker, n_chunk, seed): (i, n_chunk)
+        fut_map = {executor.submit(worker, i, n_chunk, seed): (i, n_chunk)
                    for i, (n_chunk, seed) in enumerate(task_args)}
-        with tqdm(total=n_runs, desc="Sampling", unit="run") as pbar:
-            for fut in as_completed(fut_map):
-                idx, chunk_size = fut_map[fut]
-                futures[idx] = fut.result()
-                pbar.update(chunk_size)
+        for fut in as_completed(fut_map):
+            idx, _ = fut_map[fut]
+            futures[idx] = fut.result()
 
     # --- Aggregate results from all workers ---
     for blocks_list, fluxes_list in futures:

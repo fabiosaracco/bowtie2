@@ -77,7 +77,12 @@ def main():
         dicos.sort()
         
         for d in dicos:
-            qdecm_filename=HOME+f'/tests/{dataset_name}_dico{d}_qdecm.pkl'
+            qdecm_filename=TEST_FOLDER+f'{dataset_name}_dico{d}_qdecm.pkl'
+            pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks.pkl'
+            pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes.pkl'
+            if os.path.exists(pvalue_block_filename) and os.path.exists(pvalue_flux_filename):
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] P-value files for DiCo {d} already exist, skipping...')
+                continue
             if os.path.exists(qdecm_filename):
                 # check if the file was created/modified today
                 #file_mtime = dt.date.fromtimestamp(os.path.getmtime(qdecm_filename))
@@ -88,9 +93,9 @@ def main():
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d} with {len(el_dico[d]):,} edges...')
                     sys.stdout.flush()
                     block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=2*1000)
-                    with open(PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks.pkl', 'wb') as f:
+                    with open(pvalue_block_filename, 'wb') as f:
                         pickle.dump(block_dict, f)
-                    with open(PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes.pkl', 'wb') as f:
+                    with open(pvalue_flux_filename, 'wb') as f:
                         pickle.dump(flux_dict, f)
 
 if __name__ == "__main__":
