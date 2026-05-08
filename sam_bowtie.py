@@ -47,8 +47,8 @@ def _worker_chunk(model, all_nodes, emp_bowtie_dict, verbose, worker_id, n_chunk
     np.random.seed(seed)
     blocks_list = []
     fluxes_list = []
-    # Compute the iteration indices at which to print progress (every 10%).
-    milestones = set(max(1, round(n_chunk * p / 10)) for p in range(1, 11))
+    # Compute the iteration indices at which to print progress (every 20%).
+    milestones = set(max(1, round(n_chunk * p / 5)) for p in range(1, 6))
     for i in range(n_chunk):
         sampled_wel = model.sample()
         # give the right node labels to the sampled edge list (model.sample() returns edges with node indices, we need to map them back to actual node IDs)
