@@ -7,10 +7,10 @@ from collections import defaultdict
 from sam_bowtie import validate
 
 if platform.system() == 'Darwin':
-    print('Air!')
+    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Air!')
     HOME = '/Users/fabio/Documents/Lavoro/PythonFiles/bowtie2_py310/bowtie2/'
 elif platform.system() == 'Linux':
-    print('Stella!')
+    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Stella!')
     HOME = '/home/sarawalk/bowtie2_py39/bowtie2/'
 else:
     raise RuntimeError(f"Unsupported OS: {platform.system()}")
