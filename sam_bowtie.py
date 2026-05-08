@@ -88,11 +88,11 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     block_dict : dict
         Keys are bowtie block labels. Each value is a dict with:
         - 'obs'     : observed node count in that block.
-        - 'p_value' : estimated upper-tail p-value.
+        - 'p_value' : estimated two-tailed p-value.
     flux_dict : dict
         Keys are (block_src, block_tgt) pairs. Each value is a dict with:
         - 'obs'     : observed total weight flux between the two blocks.
-        - 'p_value' : estimated upper-tail p-value.
+        - 'p_value' : estimated two-tailed p-value.
     """
     # Get all nodes from the empirical edge list to ensure consistent node indexing in samples
     all_nodes=np.concatenate((weighted_el['source_id'], weighted_el['target_id']))
@@ -101,16 +101,20 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     # --- Empirical bowtie ---
     emp_bowtie_blocks, emp_bowtie_fluxes, emp_bowtie_dict = block_and_fluxes(weighted_el)
 
-    # Initialise result containers with observed values and zero p-values
+    # Initialise result containers with observed values and zero counts
     block_dict = defaultdict(dict)
     flux_dict  = defaultdict(dict)
     for block, dim_block in emp_bowtie_blocks.items():
-        block_dict[block]['obs']     = dim_block
-        block_dict[block]['p_value'] = 0
+        block_dict[block]['obs']      = dim_block
+        block_dict[block]['count_ge'] = 0
+        block_dict[block]['count_le'] = 0
+        block_dict[block]['sum_sim']  = 0
 
     for (block_s, block_t), flux in emp_bowtie_fluxes.items():
-        flux_dict[(block_s, block_t)]['obs']     = flux
-        flux_dict[(block_s, block_t)]['p_value'] = 0
+        flux_dict[(block_s, block_t)]['obs']      = flux
+        flux_dict[(block_s, block_t)]['count_ge'] = 0
+        flux_dict[(block_s, block_t)]['count_le'] = 0
+        flux_dict[(block_s, block_t)]['sum_sim']  = 0
 
     # --- Parallelisation setup ---
     if n_workers is None:
@@ -143,17 +147,37 @@ def validate(weighted_el, model, n_runs, n_workers=None):
                 pbar.update(chunk_size)
 
     # --- Aggregate results from all workers ---
-    for blocks_list, fluxes_list, bts in futures:
-        # Update block p-values
+    for blocks_list, fluxes_list in futures:
+        # Update block counts
         for sim_bowtie_blocks in blocks_list:
             for block, dim_block in sim_bowtie_blocks.items():
                 if dim_block >= block_dict[block]['obs']:
-                    block_dict[block]['p_value'] += 1 / n_runs
-        # Update flux p-values
+                    block_dict[block]['count_ge'] += 1
+                if dim_block <= block_dict[block]['obs']:
+                    block_dict[block]['count_le'] += 1
+                block_dict[block]['sum_sim'] += dim_block
+        # Update flux counts
         for sim_bowtie_fluxes in fluxes_list:
             for (block_s, block_t), flux in sim_bowtie_fluxes.items():
                 if flux >= flux_dict[(block_s, block_t)]['obs']:
-                    flux_dict[(block_s, block_t)]['p_value'] += 1 / n_runs
+                    flux_dict[(block_s, block_t)]['count_ge'] += 1
+                if flux <= flux_dict[(block_s, block_t)]['obs']:
+                    flux_dict[(block_s, block_t)]['count_le'] += 1
+                flux_dict[(block_s, block_t)]['sum_sim'] += flux
+
+    # --- Compute two-tailed p-values and clean up raw counts ---
+    for block in block_dict:
+        mean_sim = block_dict[block]['sum_sim'] / n_runs
+        block_dict[block]['mean_sim'] = mean_sim
+        block_dict[block]['tail']     = 'right' if block_dict[block]['obs'] > mean_sim else 'left'
+        block_dict[block]['p_value']  = min(1.0, 2 * min(block_dict[block]['count_ge'], block_dict[block]['count_le']) / n_runs)
+        del block_dict[block]['count_ge'], block_dict[block]['count_le'], block_dict[block]['sum_sim']
+    for key in flux_dict:
+        mean_sim = flux_dict[key]['sum_sim'] / n_runs
+        flux_dict[key]['mean_sim'] = mean_sim
+        flux_dict[key]['tail']     = 'right' if flux_dict[key]['obs'] > mean_sim else 'left'
+        flux_dict[key]['p_value']  = min(1.0, 2 * min(flux_dict[key]['count_ge'], flux_dict[key]['count_le']) / n_runs)
+        del flux_dict[key]['count_ge'], flux_dict[key]['count_le'], flux_dict[key]['sum_sim']
 
     return block_dict, flux_dict
 
