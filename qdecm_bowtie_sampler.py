@@ -92,7 +92,7 @@ def main():
                 if hasattr(qdecm, 'sol') and qdecm.sol.converged:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d} with {len(el_dico[d]):,} edges...')
                     sys.stdout.flush()
-                    block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=2*1000)
+                    block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=2*1000, verbose=True)
                     with open(pvalue_block_filename, 'wb') as f:
                         pickle.dump(block_dict, f)
                     with open(pvalue_flux_filename, 'wb') as f:
