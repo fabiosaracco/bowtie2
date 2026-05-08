@@ -171,7 +171,7 @@ def main():
         convergence='converged'
     else:
         convergence='did not converge'
-    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM {convergence} in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol.best_theta[:2*qdecm.N]):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol.best_theta[:2*qdecm.N], qdecm.sol.best_theta[2*qdecm.N:]):.2e} (peak RAM={qdecm.sol.peak_ram_bytes//1024**2} MB)')
+    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM {convergence} in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.sol.residuals_topo[-1]:.2e}, MRE(strengths)={qdecm.sol.residuals_weights[-1]:.2e} (peak RAM={qdecm.sol.peak_ram_bytes//1024**2} MB)')
     sys.stdout.flush()
 
 if __name__ == "__main__":
