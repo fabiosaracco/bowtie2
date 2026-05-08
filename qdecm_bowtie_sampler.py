@@ -4,7 +4,7 @@ import datetime as dt
 import numpy as np
 from collections import defaultdict
 
-from sam_bow_tie import validate
+from sam_bowtie import validate
 
 if platform.system() == 'Darwin':
     print('Air!')

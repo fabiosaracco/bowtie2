@@ -21,14 +21,24 @@ sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 TEST_FOLDER=HOME+'tests/'
 
+DATASET='quirinale'
+DICO=4
+
 MAX_TIME_HOURS=6
+TOL=1e-5
+ANDERSON=7
+HUB_TH=50
+#GAMMA=1.2
+GAMMA=0.
+RECYCLE_TOPOLOGY=True
+RECYCLE_WEIGHTS=True
 
 
 
 def main():
 
-    dataset_keyword='crisi'
-    dico_class=1
+    dataset_keyword=DATASET
+    dico_class=DICO
 
 
 
@@ -94,10 +104,6 @@ def main():
     dicos=list(el_dico.keys())
     dicos.sort()
     
-    
-
-    
-    
     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo class {dico_class}...')
     sys.stdout.flush()
     aux=el2ks(el_dico[dico_class])
@@ -111,43 +117,54 @@ def main():
     sys.stdout.flush()
 
     qdecm_filename=TEST_FOLDER+f'{dataset_name}_dico{dico_class}_qdecm.pkl'
-    if os.path.exists(qdecm_filename):
-        with open(qdecm_filename, 'rb') as f:
-            model=pickle.load(f)
+    # check the existing solution
+    with open(qdecm_filename, 'rb') as f:
+        model=pickle.load(f)
 
-        # tackle the existing solution if it did not converge
-        if hasattr(model, 'sol'):
-            if model.sol.converged:
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Existing QDECM solution for DiCo class {dico_class} is already converged, exiting...')
-                return
-            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] qDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
-            qdecm=qDECMModel(aux[0], aux[1], aux[2], aux[3])
+    # tackle the existing solution if it did not converge
+    if hasattr(model, 'sol'):
+        if model.sol.converged:
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Existing QDECM solution for DiCo class {dico_class} is already converged, exiting...')
+            return
+    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] qDECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
+    qdecm=qDECMModel(aux[0], aux[1], aux[2], aux[3])
 
-    
-            try:
-                qdecm.solve_tool(tol=1e-5, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True, gamma=1.2, anderson_depth=3, hub_sk_threshold=100)
-                with open(qdecm_filename, 'wb') as f:
-                    pickle.dump(qdecm, f)
-                # elapsed time (in hours and minutes)
-                t_ets=qdecm.sol_topo.elapsed_time+qdecm.sol_weights.elapsed_time
-                eth=t_ets//3600
-                etm=(t_ets % 3600)/60
-        
-                if qdecm.sol_topo.converged and qdecm.sol_weights.converged:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol_topo.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol_topo.theta, qdecm.sol_weights.theta):.2e} (peak RAM={qdecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {qdecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
-                    sys.stdout.flush()
-                else:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol_topo.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol_topo.theta, qdecm.sol_weights.theta):.2e} (peak RAM={qdecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {qdecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
-                    sys.stdout.flush()
+    # check if the solution for the topology can be used
+    if RECYCLE_TOPOLOGY and model.sol.residuals_topo[-1]<TOL:
+        ic_topo=model.sol.best_theta[:2*model.N]
+    else:
+        ic_topo="degrees"
 
-            except Exception as e:
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving QDECM with pytorch and theta: {e}')
-                sys.stdout.flush()
-            
-            
-    
+    # if the solution for the weights did no converge, but it was quite close to convergence
+    # we can still use the best theta found for the weights as an initial condition for the new run, which can help convergence
+    if RECYCLE_WEIGHTS and model.sol.residuals_weights[-1]<10*TOL:
+        ic_wei=model.sol.best_theta[2*model.N:]
+    else:
+        ic_wei="topology"
 
 
+    try:
+        qdecm.solve_tool(tol=TOL, ic_topo=ic_topo, ic_wei=ic_wei, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA)
+    except KeyboardInterrupt:
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Interrupted by user (KeyboardInterrupt), saving before exit...')
+        sys.stdout.flush()
+    except Exception as e:
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving QDECM with pytorch and theta: {e}')
+        sys.stdout.flush()
+
+    with open(qdecm_filename, 'wb') as f:
+        pickle.dump(qdecm, f)
+    # elapsed time (in hours and minutes)
+    t_ets=qdecm.sol_topo.elapsed_time+qdecm.sol_weights.elapsed_time
+    eth=t_ets//3600
+    etm=(t_ets % 3600)/60
+
+    if qdecm.sol_topo.converged and qdecm.sol_weights.converged:
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol_topo.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol_topo.theta, qdecm.sol_weights.theta):.2e} (peak RAM={qdecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {qdecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+        sys.stdout.flush()
+    else:
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] QDECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE(degrees)={qdecm.constraint_error_topology(qdecm.sol_topo.theta):.2e}, MRE(strengths)={qdecm.constraint_error_strength(qdecm.sol_topo.theta, qdecm.sol_weights.theta):.2e} (peak RAM={qdecm.sol_topo.peak_ram_bytes//1024**2} MB (topo), {qdecm.sol_weights.peak_ram_bytes//1024**2} MB (weights))')
+        sys.stdout.flush()
 
 if __name__ == "__main__":
     main()
