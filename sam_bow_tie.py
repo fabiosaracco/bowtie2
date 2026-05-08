@@ -35,12 +35,14 @@ def _worker_chunk(args):
     fluxes_list : list of dict
         One dict per iteration mapping (block_src, block_tgt) -> total weight flux.
     """
-    model, n_chunk, seed = args
+    model, n_chunk, seed, all_nodes = args
     np.random.seed(seed)
     blocks_list = []
     fluxes_list = []
     for _ in range(n_chunk):
         sampled_wel = model.sample()
+        # give the right node labels to the sampled edge list (model.sample() returns edges with node indices, we need to map them back to actual node IDs)
+        sampled_wel=[(all_nodes[edge[0]], all_nodes[edge[1]], edge[2]) for edge in sampled_wel]
         sim_blocks, sim_fluxes = block_and_fluxes(sampled_wel)
         blocks_list.append(dict(sim_blocks))
         fluxes_list.append(dict(sim_fluxes))
@@ -87,6 +89,10 @@ def validate(weighted_el, model, n_runs, n_workers=None):
         - 'obs'     : observed total weight flux between the two blocks.
         - 'p_value' : estimated upper-tail p-value.
     """
+    # Get all nodes from the empirical edge list to ensure consistent node indexing in samples
+    all_nodes=np.concatenate((weighted_el['source_id'], weighted_el['target_id']))
+    all_nodes=np.unique(all_nodes)
+    
     # --- Empirical bowtie ---
     emp_bowtie_blocks, emp_bowtie_fluxes = block_and_fluxes(weighted_el)
 
@@ -114,7 +120,7 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     # Draw fully independent seeds for each worker (not derived from a common base)
     # to avoid correlated pseudo-random sequences across processes.
     seeds = np.random.randint(0, 2**31, size=n_workers).tolist()
-    task_args = [(model, chunk, seed) for chunk, seed in zip(chunks, seeds)]
+    task_args = [(model, chunk, seed, all_nodes) for chunk, seed in zip(chunks, seeds)]
 
     # Launch workers; map() preserves order, so no synchronisation is needed
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
