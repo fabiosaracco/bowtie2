@@ -21,12 +21,12 @@ sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 TEST_FOLDER=HOME+'tests/'
 
-#DATASET='quirinale'
+DATASET='quirinale'
 #DATASET='crisi'
-DATASET='ita'
-DICO=1
+#DATASET='ita'
+#DICO=1
 #DICO=0
-#DICO=5
+DICO=4
 
 MAX_TIME_HOURS=6
 #MAX_TIME_HOURS=2
