@@ -159,6 +159,12 @@ def validate(weighted_el, model, n_runs, n_workers=None):
         # Update flux counts
         for sim_bowtie_fluxes in fluxes_list:
             for (block_s, block_t), flux in sim_bowtie_fluxes.items():
+                if (block_s, block_t) not in flux_dict.keys():
+                    # This can happen if a sampled network has nonzero flux between blocks that had zero flux in the empirical network (e.g. no edges from IN to OUT in the empirical network, but some samples do have such edges). In this case we need to initialize the corresponding entry in flux_dict to avoid KeyErrors.
+                    flux_dict[(block_s, block_t)]['obs'] = 0
+                    flux_dict[(block_s, block_t)]['count_ge'] = 0
+                    flux_dict[(block_s, block_t)]['count_le'] = 0
+                    flux_dict[(block_s, block_t)]['sum_sim'] = 0
                 if flux >= flux_dict[(block_s, block_t)]['obs']:
                     flux_dict[(block_s, block_t)]['count_ge'] += 1
                 if flux <= flux_dict[(block_s, block_t)]['obs']:
