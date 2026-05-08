@@ -167,7 +167,7 @@ def validate(weighted_el, model, n_runs, n_workers=None):
                     flux_dict[(block_s, block_t)]['sum_sim'] = 0
                 if flux >= flux_dict[(block_s, block_t)]['obs']:
                     flux_dict[(block_s, block_t)]['count_ge'] += 1
-                if flux <= flux_dict[(block_s, block_t)]['obs']:
+                elif flux <= flux_dict[(block_s, block_t)]['obs']:
                     flux_dict[(block_s, block_t)]['count_le'] += 1
                 flux_dict[(block_s, block_t)]['sum_sim'] += flux
 
@@ -175,13 +175,19 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     for block in block_dict:
         mean_sim = block_dict[block]['sum_sim'] / n_runs
         block_dict[block]['mean_sim'] = mean_sim
-        block_dict[block]['tail']     = 'right' if block_dict[block]['obs'] > mean_sim else 'left'
+        if block_dict[block]['obs'] > mean_sim:
+            block_dict[block]['tail']     = 'right'
+        else:
+            block_dict[block]['tail']     = 'left'
         block_dict[block]['p_value']  = min(1.0, 2 * min(block_dict[block]['count_ge'], block_dict[block]['count_le']) / n_runs)
         del block_dict[block]['count_ge'], block_dict[block]['count_le'], block_dict[block]['sum_sim']
     for key in flux_dict:
         mean_sim = flux_dict[key]['sum_sim'] / n_runs
         flux_dict[key]['mean_sim'] = mean_sim
-        flux_dict[key]['tail']     = 'right' if flux_dict[key]['obs'] > mean_sim else 'left'
+        if flux_dict[key]['obs'] > mean_sim:
+            flux_dict[key]['tail']     = 'right'
+        else:
+            flux_dict[key]['tail']     = 'left'
         flux_dict[key]['p_value']  = min(1.0, 2 * min(flux_dict[key]['count_ge'], flux_dict[key]['count_le']) / n_runs)
         del flux_dict[key]['count_ge'], flux_dict[key]['count_le'], flux_dict[key]['sum_sim']
 
