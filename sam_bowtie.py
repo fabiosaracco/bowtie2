@@ -158,6 +158,12 @@ def validate(weighted_el, model, n_runs, n_workers=None, verbose=False):
         # Update block counts
         for sim_bowtie_blocks in blocks_list:
             for block, dim_block in sim_bowtie_blocks.items():
+                if block not in block_dict.keys():
+                    # This can happen if a sampled network has nodes in a block that was empty in the empirical network (e.g. some samples have a non-empty SCC, but the empirical network has no SCC). In this case we need to initialize the corresponding entry in block_dict to avoid KeyErrors.
+                    block_dict[block]['obs'] = 0
+                    block_dict[block]['count_ge'] = 0
+                    block_dict[block]['count_le'] = 0
+                    block_dict[block]['sum_sim'] = 0
                 if dim_block >= block_dict[block]['obs']:
                     block_dict[block]['count_ge'] += 1
                 if dim_block <= block_dict[block]['obs']:
