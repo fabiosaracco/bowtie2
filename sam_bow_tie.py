@@ -10,7 +10,7 @@ import multiprocessing
 from bowtie import edges2bowtie
 
 
-def _worker_chunk(args):
+def _worker_chunk(model, all_nodes, emp_bowtie_dict, n_chunk, seed):
     """Worker function executed in a separate process.
 
     Performs `n_chunk` independent sampling iterations:
@@ -23,12 +23,16 @@ def _worker_chunk(args):
 
     Parameters
     ----------
-    args : tuple
-        (model, n_chunk, seed)
-        - model   : fitted model object exposing a `.sample()` method that returns
-                    a weighted edge list as a list of (source, target, weight) triples.
-        - n_chunk : number of sampling iterations assigned to this worker.
-        - seed    : integer random seed for numpy, drawn independently per worker.
+    model : model object
+        Fitted model exposing a `.sample()` method.
+    all_nodes : array-like
+        Ordered array of node IDs used to remap sampled edge indices.
+    emp_bowtie_dict : dict
+        Node -> bowtie block mapping of the empirical network.
+    n_chunk : int
+        Number of sampling iterations assigned to this worker.
+    seed : int
+        Random seed for numpy, drawn independently per worker.
 
     Returns
     -------
@@ -37,7 +41,6 @@ def _worker_chunk(args):
     fluxes_list : list of dict
         One dict per iteration mapping (block_src, block_tgt) -> total weight flux.
     """
-    model, all_nodes, emp_bowtie_dict, n_chunk, seed = args
     np.random.seed(seed)
     blocks_list = []
     fluxes_list = []
