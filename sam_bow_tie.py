@@ -2,7 +2,9 @@ import os, sys, pickle
 import datetime as dt
 import numpy as np
 from collections import defaultdict
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
+from tqdm import tqdm
 import multiprocessing
 
 from bowtie import edges2bowtie
@@ -35,7 +37,7 @@ def _worker_chunk(args):
     fluxes_list : list of dict
         One dict per iteration mapping (block_src, block_tgt) -> total weight flux.
     """
-    model, n_chunk, seed, all_nodes = args
+    model, all_nodes, emp_bowtie_dict, n_chunk, seed = args
     np.random.seed(seed)
     blocks_list = []
     fluxes_list = []
@@ -43,7 +45,7 @@ def _worker_chunk(args):
         sampled_wel = model.sample()
         # give the right node labels to the sampled edge list (model.sample() returns edges with node indices, we need to map them back to actual node IDs)
         sampled_wel=[(all_nodes[edge[0]], all_nodes[edge[1]], edge[2]) for edge in sampled_wel]
-        sim_blocks, sim_fluxes = block_and_fluxes(sampled_wel)
+        sim_blocks, sim_fluxes, _ = block_and_fluxes(sampled_wel, original_bowtie_dict=emp_bowtie_dict)
         blocks_list.append(dict(sim_blocks))
         fluxes_list.append(dict(sim_fluxes))
     return blocks_list, fluxes_list
@@ -94,7 +96,7 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     all_nodes=np.unique(all_nodes)
     
     # --- Empirical bowtie ---
-    emp_bowtie_blocks, emp_bowtie_fluxes = block_and_fluxes(weighted_el)
+    emp_bowtie_blocks, emp_bowtie_fluxes, emp_bowtie_dict = block_and_fluxes(weighted_el)
 
     # Initialise result containers with observed values and zero p-values
     block_dict = defaultdict(dict)
@@ -120,14 +122,25 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     # Draw fully independent seeds for each worker (not derived from a common base)
     # to avoid correlated pseudo-random sequences across processes.
     seeds = np.random.randint(0, 2**31, size=n_workers).tolist()
-    task_args = [(model, chunk, seed, all_nodes) for chunk, seed in zip(chunks, seeds)]
 
-    # Launch workers; map() preserves order, so no synchronisation is needed
+    # Bind the fixed arguments once; each worker only needs (n_chunk, seed).
+    worker = partial(_worker_chunk, model, all_nodes, emp_bowtie_dict)
+    task_args = list(zip(chunks, seeds))
+
+    # Launch workers and collect results in order, updating the progress bar
+    # as each worker completes (unit = individual sampling iterations).
+    futures = [None] * n_workers
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
-        futures = list(executor.map(_worker_chunk, task_args))
+        fut_map = {executor.submit(worker, n_chunk, seed): (i, n_chunk)
+                   for i, (n_chunk, seed) in enumerate(task_args)}
+        with tqdm(total=n_runs, desc="Sampling", unit="run") as pbar:
+            for fut in as_completed(fut_map):
+                idx, chunk_size = fut_map[fut]
+                futures[idx] = fut.result()
+                pbar.update(chunk_size)
 
     # --- Aggregate results from all workers ---
-    for blocks_list, fluxes_list in futures:
+    for blocks_list, fluxes_list, bts in futures:
         # Update block p-values
         for sim_bowtie_blocks in blocks_list:
             for block, dim_block in sim_bowtie_blocks.items():
@@ -142,7 +155,7 @@ def validate(weighted_el, model, n_runs, n_workers=None):
     return block_dict, flux_dict
 
 
-def block_and_fluxes(weighted_el):
+def block_and_fluxes(weighted_el, original_bowtie_dict=None):
     """Extract the bowtie structure of a weighted directed network.
 
     Assigns each node to a bowtie block (SCC, IN, OUT, TUBE, OTHER, …)
@@ -172,12 +185,14 @@ def block_and_fluxes(weighted_el):
     for node, block in bowtie_dict.items():
         bowtie_counts[block] += 1
 
+    if original_bowtie_dict is None:
+        original_bowtie_dict = bowtie_dict
+
     # Sum edge weights for each directed pair of blocks
     bowtie_fluxes = defaultdict(int)
     for s, t, w in weighted_el:
-        block_s = bowtie_dict[s]
-        block_t = bowtie_dict[t]
+        block_s = original_bowtie_dict[s]
+        block_t = original_bowtie_dict[t]
         bowtie_fluxes[(block_s, block_t)] += w
 
-    return bowtie_counts, bowtie_fluxes
-
+    return bowtie_counts, bowtie_fluxes, bowtie_dict
