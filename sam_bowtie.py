@@ -98,12 +98,18 @@ def validate(weighted_el, model, n_runs, n_workers=None, verbose=False):
     -------
     block_dict : dict
         Keys are bowtie block labels. Each value is a dict with:
-        - 'obs'     : observed node count in that block.
-        - 'p_value' : estimated two-tailed p-value.
+        - 'obs'      : observed node count in that block.
+        - 'mean_sim' : mean node count across all simulated networks.
+        - 'std_sim'  : standard deviation of node count across simulated networks.
+        - 'tail'     : 'right' if obs > mean_sim, 'left' otherwise.
+        - 'p_value'  : estimated two-tailed p-value.
     flux_dict : dict
         Keys are (block_src, block_tgt) pairs. Each value is a dict with:
-        - 'obs'     : observed total weight flux between the two blocks.
-        - 'p_value' : estimated two-tailed p-value.
+        - 'obs'      : observed total weight flux between the two blocks.
+        - 'mean_sim' : mean flux across all simulated networks.
+        - 'std_sim'  : standard deviation of flux across simulated networks.
+        - 'tail'     : 'right' if obs > mean_sim, 'left' otherwise.
+        - 'p_value'  : estimated two-tailed p-value.
     """
     # Get all nodes from the empirical edge list to ensure consistent node indexing in samples
     all_nodes=np.concatenate((weighted_el['source_id'], weighted_el['target_id']))
@@ -116,16 +122,18 @@ def validate(weighted_el, model, n_runs, n_workers=None, verbose=False):
     block_dict = defaultdict(dict)
     flux_dict  = defaultdict(dict)
     for block, dim_block in emp_bowtie_blocks.items():
-        block_dict[block]['obs']      = dim_block
-        block_dict[block]['count_ge'] = 0
-        block_dict[block]['count_le'] = 0
-        block_dict[block]['sum_sim']  = 0
+        block_dict[block]['obs']       = dim_block
+        block_dict[block]['count_ge']  = 0
+        block_dict[block]['count_le']  = 0
+        block_dict[block]['sum_sim']   = 0
+        block_dict[block]['sum_sq_sim'] = 0
 
     for (block_s, block_t), flux in emp_bowtie_fluxes.items():
-        flux_dict[(block_s, block_t)]['obs']      = flux
-        flux_dict[(block_s, block_t)]['count_ge'] = 0
-        flux_dict[(block_s, block_t)]['count_le'] = 0
-        flux_dict[(block_s, block_t)]['sum_sim']  = 0
+        flux_dict[(block_s, block_t)]['obs']       = flux
+        flux_dict[(block_s, block_t)]['count_ge']  = 0
+        flux_dict[(block_s, block_t)]['count_le']  = 0
+        flux_dict[(block_s, block_t)]['sum_sim']   = 0
+        flux_dict[(block_s, block_t)]['sum_sq_sim'] = 0
 
     # --- Parallelisation setup ---
     if n_workers is None:
@@ -160,49 +168,55 @@ def validate(weighted_el, model, n_runs, n_workers=None, verbose=False):
             for block, dim_block in sim_bowtie_blocks.items():
                 if block not in block_dict.keys():
                     # This can happen if a sampled network has nodes in a block that was empty in the empirical network (e.g. some samples have a non-empty SCC, but the empirical network has no SCC). In this case we need to initialize the corresponding entry in block_dict to avoid KeyErrors.
-                    block_dict[block]['obs'] = 0
-                    block_dict[block]['count_ge'] = 0
-                    block_dict[block]['count_le'] = 0
-                    block_dict[block]['sum_sim'] = 0
+                    block_dict[block]['obs']        = 0
+                    block_dict[block]['count_ge']   = 0
+                    block_dict[block]['count_le']   = 0
+                    block_dict[block]['sum_sim']    = 0
+                    block_dict[block]['sum_sq_sim'] = 0
                 if dim_block >= block_dict[block]['obs']:
                     block_dict[block]['count_ge'] += 1
                 if dim_block <= block_dict[block]['obs']:
                     block_dict[block]['count_le'] += 1
-                block_dict[block]['sum_sim'] += dim_block
+                block_dict[block]['sum_sim']    += dim_block
+                block_dict[block]['sum_sq_sim'] += dim_block ** 2
         # Update flux counts
         for sim_bowtie_fluxes in fluxes_list:
             for (block_s, block_t), flux in sim_bowtie_fluxes.items():
                 if (block_s, block_t) not in flux_dict.keys():
                     # This can happen if a sampled network has nonzero flux between blocks that had zero flux in the empirical network (e.g. no edges from IN to OUT in the empirical network, but some samples do have such edges). In this case we need to initialize the corresponding entry in flux_dict to avoid KeyErrors.
-                    flux_dict[(block_s, block_t)]['obs'] = 0
-                    flux_dict[(block_s, block_t)]['count_ge'] = 0
-                    flux_dict[(block_s, block_t)]['count_le'] = 0
-                    flux_dict[(block_s, block_t)]['sum_sim'] = 0
+                    flux_dict[(block_s, block_t)]['obs']        = 0
+                    flux_dict[(block_s, block_t)]['count_ge']   = 0
+                    flux_dict[(block_s, block_t)]['count_le']   = 0
+                    flux_dict[(block_s, block_t)]['sum_sim']    = 0
+                    flux_dict[(block_s, block_t)]['sum_sq_sim'] = 0
                 if flux >= flux_dict[(block_s, block_t)]['obs']:
                     flux_dict[(block_s, block_t)]['count_ge'] += 1
                 elif flux <= flux_dict[(block_s, block_t)]['obs']:
                     flux_dict[(block_s, block_t)]['count_le'] += 1
-                flux_dict[(block_s, block_t)]['sum_sim'] += flux
+                flux_dict[(block_s, block_t)]['sum_sim']    += flux
+                flux_dict[(block_s, block_t)]['sum_sq_sim'] += flux ** 2
 
     # --- Compute two-tailed p-values and clean up raw counts ---
     for block in block_dict:
         mean_sim = block_dict[block]['sum_sim'] / n_runs
         block_dict[block]['mean_sim'] = mean_sim
+        block_dict[block]['std_sim']  = np.sqrt(block_dict[block]['sum_sq_sim'] / n_runs - mean_sim ** 2)
         if block_dict[block]['obs'] > mean_sim:
-            block_dict[block]['tail']     = 'right'
+            block_dict[block]['tail']    = 'right'
         else:
-            block_dict[block]['tail']     = 'left'
-        block_dict[block]['p_value']  = min(1.0, 2 * min(block_dict[block]['count_ge'], block_dict[block]['count_le']) / n_runs)
-        del block_dict[block]['count_ge'], block_dict[block]['count_le'], block_dict[block]['sum_sim']
+            block_dict[block]['tail']    = 'left'
+        block_dict[block]['p_value'] = min(1.0, 2 * min(block_dict[block]['count_ge'], block_dict[block]['count_le']) / n_runs)
+        del block_dict[block]['count_ge'], block_dict[block]['count_le'], block_dict[block]['sum_sim'], block_dict[block]['sum_sq_sim']
     for key in flux_dict:
         mean_sim = flux_dict[key]['sum_sim'] / n_runs
         flux_dict[key]['mean_sim'] = mean_sim
+        flux_dict[key]['std_sim']  = np.sqrt(flux_dict[key]['sum_sq_sim'] / n_runs - mean_sim ** 2)
         if flux_dict[key]['obs'] > mean_sim:
-            flux_dict[key]['tail']     = 'right'
+            flux_dict[key]['tail']    = 'right'
         else:
-            flux_dict[key]['tail']     = 'left'
-        flux_dict[key]['p_value']  = min(1.0, 2 * min(flux_dict[key]['count_ge'], flux_dict[key]['count_le']) / n_runs)
-        del flux_dict[key]['count_ge'], flux_dict[key]['count_le'], flux_dict[key]['sum_sim']
+            flux_dict[key]['tail']    = 'left'
+        flux_dict[key]['p_value'] = min(1.0, 2 * min(flux_dict[key]['count_ge'], flux_dict[key]['count_le']) / n_runs)
+        del flux_dict[key]['count_ge'], flux_dict[key]['count_le'], flux_dict[key]['sum_sim'], flux_dict[key]['sum_sq_sim']
 
     return block_dict, flux_dict
 
@@ -235,7 +249,7 @@ def block_and_fluxes(weighted_el, original_bowtie_dict=None):
     # Count nodes per block
     bowtie_counts = defaultdict(int)
     for node, block in bowtie_dict.items():
-        bowtie_counts[block] += 1
+        bowtie_counts[str(block)] += 1
 
     if original_bowtie_dict is None:
         original_bowtie_dict = bowtie_dict
@@ -243,8 +257,8 @@ def block_and_fluxes(weighted_el, original_bowtie_dict=None):
     # Sum edge weights for each directed pair of blocks
     bowtie_fluxes = defaultdict(int)
     for s, t, w in weighted_el:
-        block_s = original_bowtie_dict[s]
-        block_t = original_bowtie_dict[t]
+        block_s = str(original_bowtie_dict[s])
+        block_t = str(original_bowtie_dict[t])
         bowtie_fluxes[(block_s, block_t)] += w
 
     return bowtie_counts, bowtie_fluxes, bowtie_dict
