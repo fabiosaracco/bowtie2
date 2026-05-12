@@ -21,6 +21,9 @@ DATA_FOLDER=HOME+'dati_elezioni/'
 TEST_FOLDER=HOME+'tests/'
 PVALUE_FOLDER=HOME+'pvalues/'
 
+#N_RUNS=2*1000
+N_RUNS=5*1000
+
 def main():
     files=os.listdir(DATA_FOLDER)
     files.sort()
@@ -80,9 +83,16 @@ def main():
             qdecm_filename=TEST_FOLDER+f'{dataset_name}_dico{d}_qdecm.pkl'
             pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks.pkl'
             pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes.pkl'
-            if os.path.exists(pvalue_block_filename) and os.path.exists(pvalue_flux_filename):
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] P-value files for DiCo {d} already exist, skipping...')
-                continue
+            #if os.path.exists(pvalue_block_filename) and os.path.exists(pvalue_flux_filename):
+            #    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] P-value files for DiCo {d} already exist, skipping...')
+            #    continue
+            counter=0
+            while os.path.exists(pvalue_block_filename):
+                pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks_{counter}.pkl'
+                pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_{counter}.pkl'
+                counter+=1
+                
+            
             if os.path.exists(qdecm_filename):
                 # check if the file was created/modified today
                 #file_mtime = dt.date.fromtimestamp(os.path.getmtime(qdecm_filename))
@@ -92,7 +102,7 @@ def main():
                 if hasattr(qdecm, 'sol') and qdecm.sol.converged:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d} with {len(el_dico[d]):,} edges...')
                     sys.stdout.flush()
-                    block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=2*1000, verbose=True)
+                    block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=N_RUNS, verbose=True)
                     with open(pvalue_block_filename, 'wb') as f:
                         pickle.dump(block_dict, f)
                     with open(pvalue_flux_filename, 'wb') as f:
