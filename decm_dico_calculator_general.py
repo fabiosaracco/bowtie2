@@ -149,7 +149,9 @@ def main():
             
             try:
                 decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA)
-            except Exception as e:
+            except BaseException as e:
+                # Catches both ordinary Exception and BaseException subclasses
+                # (e.g. SystemExit) that a signal-based timeout may raise.
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving DECM with pytorch and theta: {e}')
                 sys.stdout.flush()
             finally:
