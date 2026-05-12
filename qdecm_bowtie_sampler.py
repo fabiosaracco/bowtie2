@@ -100,7 +100,7 @@ def main():
                 with open(qdecm_filename, 'rb') as f:
                     qdecm=pickle.load(f)
                 if hasattr(qdecm, 'sol') and qdecm.sol.converged:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d} with {len(el_dico[d]):,} edges...')
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d}...')
                     sys.stdout.flush()
                     block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=N_RUNS, verbose=True)
                     with open(pvalue_block_filename, 'wb') as f:
