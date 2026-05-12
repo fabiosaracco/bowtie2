@@ -20,7 +20,7 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-MAX_TIME_HOURS=3
+MAX_TIME_HOURS=1
 TOL=1e-5
 ANDERSON=10
 HUB_TH=5
@@ -137,9 +137,11 @@ def main():
 
                 # check if the existing solution can be used as a starting point
                 if RECYCLE_SOL and hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'mre') and old_decm.sol.mre>TOL:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Recycling existing non-converged solution...')
                     ic=old_decm.sol.best_theta
                 else:
                     ic="degrees"
+                sys.stdout.flush()
 
             else:
                 print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
@@ -149,27 +151,22 @@ def main():
             
             try:
                 decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA)
-            except BaseException as e:
-                # Catches both ordinary Exception and BaseException subclasses
-                # (e.g. SystemExit) that a signal-based timeout may raise.
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving DECM with pytorch and theta: {e}')
-                sys.stdout.flush()
-            finally:
-                # Always save, even on timeout/exception, so the next run can
-                # reuse best_theta as initial condition instead of starting over.
-                if hasattr(decm, 'sol'):
-                    with open(decm_filename, 'wb') as f:
-                        pickle.dump(decm, f)
-
-            if hasattr(decm, 'sol'):
+                with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_decm.pkl', 'wb') as f:
+                    pickle.dump(decm, f)
                 # elapsed time (in hours and minutes)
                 t_ets=decm.sol.elapsed_time
                 eth=t_ets//3600
                 etm=(t_ets % 3600)/60
+            
                 if decm.sol.converged:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.sol.mre:.4e} (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
+                    sys.stdout.flush()
                 else:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.sol.mre:.4e} (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
+                    sys.stdout.flush()
+
+            except Exception as e:
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving DECM with pytorch and theta: {e}')
                 sys.stdout.flush()
             
             
