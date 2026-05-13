@@ -20,7 +20,7 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-MAX_TIME_HOURS=0.5
+MAX_TIME_HOURS=3
 TOL=1e-5
 ANDERSON=10
 HUB_TH=5
