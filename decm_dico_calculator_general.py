@@ -22,11 +22,11 @@ DATA_FOLDER=HOME+'dati_elezioni/'
 
 MAX_TIME_HOURS=3
 TOL=1e-5
-ANDERSON=10
+ANDERSON=5
 HUB_TH=5
 GAMMA=0.
-
-RECYCLE_SOL=True
+MONITOR=False
+RECYCLE_SOL=False
 
 
 
@@ -150,7 +150,7 @@ def main():
 
             
             try:
-                decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=False, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False)
+                decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False)
                 with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_decm.pkl', 'wb') as f:
                     pickle.dump(decm, f)
                 # elapsed time (in hours and minutes)
@@ -159,10 +159,10 @@ def main():
                 etm=(t_ets % 3600)/60
             
                 if decm.sol.converged:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.sol.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
                     sys.stdout.flush()
                 else:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.sol.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
                     sys.stdout.flush()
 
             except Exception as e:
