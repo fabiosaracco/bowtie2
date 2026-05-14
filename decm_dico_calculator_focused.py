@@ -25,10 +25,10 @@ DICO=2
 
 
 MAX_TIME_HOURS=3
-MAX_ITER=10**2
+MAX_ITER=125
 TOL=1e-5
-ANDERSON=7
-HUB_TH=5
+ANDERSON=10
+HUB_TH=20
 GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=False
@@ -186,4 +186,4 @@ def main():
 if __name__ == "__main__":
     main()
     if platform.system() == 'Darwin':
-        os.system("afplay /System/Library/Sounds/Glass.aiff")
+        os.system("afplay ta-da.mp3")
