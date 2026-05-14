@@ -127,7 +127,7 @@ def main():
 
     if len(aux[4])>3*10**4:
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
-        continue
+        return
     decm_filename=HOME+f'/tests/{dataset_name}_dico{dico_class}_decm.pkl'
     if os.path.exists(decm_filename):
         # check if the file was created/modified today
@@ -138,7 +138,7 @@ def main():
         if hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'converged') and old_decm.sol.converged and old_decm.sol.mre<TOL:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for decm with pytorch and theta already exists. Skipping...')
             sys.stdout.flush()
-            continue
+            return
 
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
         decm=DECMModel(aux[0], aux[1], aux[2], aux[3])
