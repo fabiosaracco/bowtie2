@@ -25,13 +25,14 @@ DICO=2
 
 
 MAX_TIME_HOURS=3
-MAX_ITER=125
+MAX_ITER=5000
 TOL=1e-5
 ANDERSON=10
-HUB_TH=20
+HUB_TH=5
 GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=False
+GAUGE_PIVOT='min'
 
 
 
@@ -129,12 +130,17 @@ def main():
     if len(aux[4])>3*10**4:
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
         return
-    decm_filename=HOME+f'/tests/{dataset_name}_dico{dico_class}_decm_and_{ANDERSON}_gamma_{GAMMA}_hub_{HUB_TH}.pkl'
-    if os.path.exists(decm_filename):
+    
+    if GAUGE_PIVOT is not None:
+        file_name=HOME+f'/tests/{dataset_name}_dico{dico_class}_decm_and_{ANDERSON}_gamma_{GAMMA}_hub_{HUB_TH}_gauge_{GAUGE_PIVOT}.pkl'
+    else:
+        file_name=HOME+f'/tests/{dataset_name}_dico{dico_class}_decm_and_{ANDERSON}_gamma_{GAMMA}_hub_{HUB_TH}.pkl'
+    
+    if os.path.exists(file_name):
         # check if the file was created/modified today
-        #file_mtime = dt.date.fromtimestamp(os.path.getmtime(decm_filename))
+        #file_mtime = dt.date.fromtimestamp(os.path.getmtime(file_name))
         #if file_mtime == dt.date.today():
-        with open(decm_filename, 'rb') as f:
+        with open(file_name, 'rb') as f:
             old_decm=pickle.load(f)
         if hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'converged') and old_decm.sol.converged and old_decm.sol.mre<TOL:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for decm with pytorch and theta already exists. Skipping...')
@@ -159,8 +165,8 @@ def main():
 
     
     try:
-        decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False)
-        with open(HOME+f'/tests/{dataset_name}_dico{dico_class}_decm_and_{ANDERSON}_gamma_{GAMMA}_hub_{HUB_TH}.pkl', 'wb') as f:
+        decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, gauge_pivot=GAUGE_PIVOT)
+        with open(file_name, 'wb') as f:
             pickle.dump(decm, f)
         # elapsed time (in hours and minutes)
         t_ets=decm.sol.elapsed_time
