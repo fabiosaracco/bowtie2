@@ -20,8 +20,8 @@ _CANONICAL_POS = {
 # Default colormaps:
 #   blocks → RdYlGn : p=0 (significant) = red, p=1 = green
 #   fluxes → RdPu_r : p=0 (significant) = dark purple, p=1 = light
-_BLOCK_CMAP = 'RdYlGn'
-_FLUX_CMAP  = 'RdPu_r'
+_BLOCK_CMAP = 'hot_r'
+_FLUX_CMAP  = 'cool'
 
 # Floor for LogNorm (avoids log(0) when a p-value is exactly 0)
 _PVAL_FLOOR = 1e-6
@@ -115,7 +115,8 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
                 show_flux_color, show_flux_size,
                 neutral_r=0.55, neutral_lw=2.0,
                 neutral_arrow_color='black',
-                unvalidated_color='0.70'):
+                unvalidated_color='0.70',
+                arrow_border=False):
     """Draw one complete bowtie panel onto *ax*.
 
     Parameters
@@ -137,8 +138,11 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
     neutral_lw          : float             – uniform linewidth used when show_flux_size=False
     neutral_arrow_color : str               – arrow colour when show_flux_color=False
     unvalidated_color   : str               – arrow colour for non-validated observed fluxes
+    arrow_border        : bool              – if True, draw a thin black stroke around arrows
+                                              whose linewidth exceeds the median (large arrows only)
     """
     # ── arrows (drawn first, behind circles) ─────────────────────────────────
+    _lw_border = np.median(list(lws.values())) if (arrow_border and lws) else np.inf
     for fkey, fval in obs_flux_dict.items():
         if type(fkey) is not tuple:
             src, tgt = fkey.split('->')
@@ -161,12 +165,17 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
         else:
             x0, y0, x1, y1 = _offset_endpoints(
                 pos[src][0], pos[src][1], pos[tgt][0], pos[tgt][1], r0, r1)
-            ax.annotate('', xy=(x1, y1), xytext=(x0, y0),
-                        arrowprops=dict(
-                            arrowstyle='->', color=color, lw=lw,
-                            mutation_scale=10 + lw,
-                            connectionstyle='arc3,rad=0.08'),
-                        zorder=2)
+            ann = ax.annotate('', xy=(x1, y1), xytext=(x0, y0),
+                              arrowprops=dict(
+                                  arrowstyle='->', color=color, lw=lw,
+                                  mutation_scale=10 + lw,
+                                  connectionstyle='arc3,rad=0.08'),
+                              zorder=2)
+            if arrow_border and lw >= _lw_border:
+                arrow_patch = getattr(ann, 'arrow_patch', None)
+                if arrow_patch is not None:
+                    arrow_patch.set_path_effects(
+                        [pe.withStroke(linewidth=lw + 2.0, foreground='black')])
 
     # ── block circles (drawn after arrows so they sit on top) ─────────────────
     for b, bval in block_dict.items():
@@ -222,12 +231,12 @@ def plot_bowtie(block_dict, flux_dict, alpha=0.05, figsize=(7, 6)):
 
     Returns
     -------
-    fig1, fig2, fig3 : matplotlib.figure.Figure
+    fig1, fig2 : matplotlib.figure.Figure
         1. **Blocks** – size ∝ log(obs), colour = p-value (log scale).
            All observed fluxes shown in black.
         2. **Fluxes** – width ∝ log(obs), validated fluxes coloured by
-           p-value (log scale), non-validated in gray.
-        3. **Combined** – both colour scales together.
+           p-value (log scale), non-validated in gray; large arrows
+           (linewidth above median) have a thin black border.
     """
     blocks     = list(block_dict.keys())
     pos        = _positions(blocks)
@@ -262,22 +271,10 @@ def plot_bowtie(block_dict, flux_dict, alpha=0.05, figsize=(7, 6)):
                 block_cmap=fcmap, flux_cmap=fcmap,
                 show_block_color=False, show_block_size=False,
                 show_flux_color=True,  show_flux_size=True,
-                neutral_r=0.55, neutral_lw=2.0, **common)
+                neutral_r=0.55, neutral_lw=2.0, arrow_border=True, **common)
     ax2.set_title(f'Fluxes\n(width ∝ log flux, validated coloured [α={alpha}], non-validated gray)',
                   fontsize=10)
     _add_colorbar(fig2, ax2, fcmap, fnorm, 'p-value (fluxes)')
     fig2.tight_layout()
 
-    # ── Figure 3: combined – block colours (RdYlGn) + flux colours (RdPu_r)
-    fig3, ax3 = plt.subplots(figsize=figsize)
-    _draw_scene(ax3, block_dict, obs_flux, validated_flux_keys=valid_keys,
-                block_cmap=bcmap, flux_cmap=fcmap,
-                show_block_color=True, show_block_size=True,
-                show_flux_color=True,  show_flux_size=True,
-                neutral_r=0.55, neutral_lw=2.0, **common)
-    ax3.set_title('Combined\n(separate colour scales)', fontsize=10)
-    _add_colorbar(fig3, ax3, bcmap, bnorm, 'p-value (blocks)', shrink=0.50, pad=0.02)
-    _add_colorbar(fig3, ax3, fcmap, fnorm, 'p-value (fluxes)', shrink=0.50, pad=0.12)
-    fig3.tight_layout()
-
-    return fig1, fig2, fig3
+    return fig1, fig2
