@@ -347,7 +347,10 @@ def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6)):
     # ── Extract blocks from flux keys; dummy block_dict for positioning only
     all_blocks = set()
     for key in obs_flux:
-        src, tgt = key.split('->')
+        if type(key) is tuple:
+            src, tgt = key
+        else:
+            src, tgt = key.split('->')
         all_blocks.update([src, tgt])
     dummy_block_dict = {b: {'obs': 0, 'p_value': 1.0} for b in all_blocks}
 
