@@ -313,7 +313,7 @@ def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6)):
                 show_flux_color=False, show_flux_size=False,
                 neutral_r=0.55, neutral_lw=2.0,
                 neutral_block_color='0.82',
-                neutral_arrow_color='black',
+                neutral_arrow_color='grey',
                 validated_block_keys=validated_keys,
                 arrow_border=False)
     ax.set_title(f'Blocks  (size ∝ log n, colour = p-value, FDR α={alpha})', fontsize=10)
