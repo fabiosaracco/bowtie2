@@ -92,18 +92,30 @@ def _offset_endpoints(x0, y0, x1, y1, r0, r1):
     return x0 + r0 * ux, y0 + r0 * uy, x1 - r1 * ux, y1 - r1 * uy
 
 
-def _draw_self_loop(ax, x, y, r, color, lw):
+def _draw_self_loop(ax, x, y, r, color, lw, arrow_border=False):
     """Small circular loop drawn above a block circle."""
     lr = r * 0.55
     cx, cy = x, y + r + lr
     theta = np.linspace(0.0, 2 * np.pi, 120)
     lx = cx + lr * np.cos(theta)
     ly = cy + lr * np.sin(theta)
-    ax.plot(lx, ly, color=color, lw=lw, zorder=2, solid_capstyle='round')
-    ax.annotate('', xy=(lx[-1], ly[-1] - 0.01), xytext=(lx[-2], ly[-2]),
-                arrowprops=dict(arrowstyle='->', color=color, lw=lw,
-                                mutation_scale=8 + lw * 0.5),
+    loop_line, = ax.plot(lx, ly, color=color, lw=lw, zorder=2, solid_capstyle='round')
+    if arrow_border:
+        loop_line.set_path_effects([pe.withStroke(linewidth=lw + 2.0, foreground='black')])
+    tail_w = max(0.12, lw / 10.0)
+    head_w = max(0.40, tail_w * 3.0)
+    head_l = max(0.30, head_w * 0.65)
+    astyle  = (f'simple,tail_width={tail_w:.3f},'
+               f'head_width={head_w:.3f},head_length={head_l:.3f}')
+    ann = ax.annotate('', xy=(lx[-1], ly[-1] - 0.01), xytext=(lx[-2], ly[-2]),
+                arrowprops=dict(arrowstyle=astyle, color=color, lw=0,
+                                mutation_scale=10),
                 zorder=3)
+    if arrow_border:
+        arrow_patch = getattr(ann, 'arrow_patch', None)
+        if arrow_patch is not None:
+            arrow_patch.set_path_effects(
+                [pe.withStroke(linewidth=2.0, foreground='black')])
 
 
 # ── Core scene renderer ───────────────────────────────────────────────────────
@@ -159,21 +171,27 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
         r1 = radii.get(tgt, neutral_r) if show_block_size else neutral_r
 
         if src == tgt:
-            _draw_self_loop(ax, pos[src][0], pos[src][1], r0, color, lw)
+            _draw_self_loop(ax, pos[src][0], pos[src][1], r0, color, lw,
+                            arrow_border=arrow_border)
         else:
             x0, y0, x1, y1 = _offset_endpoints(
                 pos[src][0], pos[src][1], pos[tgt][0], pos[tgt][1], r0, r1)
+            tail_w = max(0.12, lw / 10.0)
+            head_w = max(0.40, tail_w * 3.0)
+            head_l = max(0.30, head_w * 0.65)
+            astyle  = (f'simple,tail_width={tail_w:.3f},'
+                       f'head_width={head_w:.3f},head_length={head_l:.3f}')
             ann = ax.annotate('', xy=(x1, y1), xytext=(x0, y0),
                               arrowprops=dict(
-                                  arrowstyle='-|>', color=color, lw=lw,
-                                  mutation_scale=15,
+                                  arrowstyle=astyle, color=color, lw=0,
+                                  mutation_scale=10,
                                   connectionstyle='arc3,rad=0.08'),
                               zorder=2)
             if arrow_border:
                 arrow_patch = getattr(ann, 'arrow_patch', None)
                 if arrow_patch is not None:
                     arrow_patch.set_path_effects(
-                        [pe.withStroke(linewidth=lw + 2.0, foreground='black')])
+                        [pe.withStroke(linewidth=2.0, foreground='black')])
 
     # ── block circles (drawn after arrows so they sit on top) ─────────────────
     for b, bval in block_dict.items():
