@@ -20,7 +20,7 @@ _CANONICAL_POS = {
 # Default colormaps:
 #   blocks → RdYlGn : p=0 (significant) = red, p=1 = green
 #   fluxes → RdPu_r : p=0 (significant) = dark purple, p=1 = light
-_BLOCK_CMAP = 'Wistia'
+_BLOCK_CMAP = 'cool'
 _FLUX_CMAP  = 'cool'
 
 # Floor for LogNorm (avoids log(0) when a p-value is exactly 0)
@@ -138,11 +138,9 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
     neutral_lw          : float             – uniform linewidth used when show_flux_size=False
     neutral_arrow_color : str               – arrow colour when show_flux_color=False
     unvalidated_color   : str               – arrow colour for non-validated observed fluxes
-    arrow_border        : bool              – if True, draw a thin black stroke around arrows
-                                              whose linewidth exceeds the median (large arrows only)
+    arrow_border        : bool              – if True, draw a thin black stroke around every arrow
     """
     # ── arrows (drawn first, behind circles) ─────────────────────────────────
-    _lw_border = np.median(list(lws.values())) if (arrow_border and lws) else np.inf
     for fkey, fval in obs_flux_dict.items():
         if type(fkey) is not tuple:
             src, tgt = fkey.split('->')
@@ -167,11 +165,11 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
                 pos[src][0], pos[src][1], pos[tgt][0], pos[tgt][1], r0, r1)
             ann = ax.annotate('', xy=(x1, y1), xytext=(x0, y0),
                               arrowprops=dict(
-                                  arrowstyle='->', color=color, lw=lw,
-                                  mutation_scale=10 + lw,
+                                  arrowstyle='-|>', color=color, lw=lw,
+                                  mutation_scale=15,
                                   connectionstyle='arc3,rad=0.08'),
                               zorder=2)
-            if arrow_border and lw >= _lw_border:
+            if arrow_border:
                 arrow_patch = getattr(ann, 'arrow_patch', None)
                 if arrow_patch is not None:
                     arrow_patch.set_path_effects(
