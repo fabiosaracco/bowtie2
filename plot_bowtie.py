@@ -64,10 +64,19 @@ def _linewidths(flux_dict, lw_min=0.8, lw_max=9.0):
 
 
 def _log_norm(value_dicts):
-    """Build a LogNorm spanning all p-values found in *value_dicts*."""
+    """Build a LogNorm spanning all p-values found in *value_dicts*.
+
+    The lower bound is rounded down to the nearest power of 10 so that
+    colourbar ticks land on clean values (e.g. 1e-4 instead of 3.2e-4).
+    """
     pvals = [v['p_value'] for d in value_dicts for v in d.values()]
     pos_pvals = [p for p in pvals if p > 0.0]
-    vmin = max(_PVAL_FLOOR, min(pos_pvals)) if pos_pvals else _PVAL_FLOOR
+    if pos_pvals:
+        raw_min = min(pos_pvals)
+        vmin = 10 ** np.floor(np.log10(raw_min))   # round down to power of 10
+        vmin = max(_PVAL_FLOOR, vmin)
+    else:
+        vmin = _PVAL_FLOOR
     return mcolors.LogNorm(vmin=vmin, vmax=1.0)
 
 
@@ -90,11 +99,11 @@ def _draw_self_loop(ax, x, y, r, color, lw):
     theta = np.linspace(0.0, 2 * np.pi, 120)
     lx = cx + lr * np.cos(theta)
     ly = cy + lr * np.sin(theta)
-    ax.plot(lx, ly, color=color, lw=lw, zorder=4, solid_capstyle='round')
+    ax.plot(lx, ly, color=color, lw=lw, zorder=2, solid_capstyle='round')
     ax.annotate('', xy=(lx[-1], ly[-1] - 0.01), xytext=(lx[-2], ly[-2]),
                 arrowprops=dict(arrowstyle='->', color=color, lw=lw,
                                 mutation_scale=8 + lw * 0.5),
-                zorder=5)
+                zorder=3)
 
 
 # ── Core scene renderer ───────────────────────────────────────────────────────
@@ -157,14 +166,14 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
                             arrowstyle='->', color=color, lw=lw,
                             mutation_scale=10 + lw,
                             connectionstyle='arc3,rad=0.08'),
-                        zorder=4)
+                        zorder=2)
 
-    # ── block circles ─────────────────────────────────────────────────────────
+    # ── block circles (drawn after arrows so they sit on top) ─────────────────
     for b, bval in block_dict.items():
         x, y  = pos[b]
         r     = radii[b] if show_block_size else neutral_r
         color = block_cmap(block_norm(max(bval['p_value'], _PVAL_FLOOR))) if show_block_color else '0.82'
-        ax.add_patch(plt.Circle((x, y), r, color=color, ec='black', lw=0.9, zorder=3))
+        ax.add_patch(plt.Circle((x, y), r, color=color, ec='black', lw=0.9, zorder=4))
         fs = max(6, int(10 * r))
         ax.text(x, y + r * 0.18, b,
                 ha='center', va='center', fontsize=fs, fontweight='bold', zorder=5,
