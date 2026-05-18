@@ -12,8 +12,8 @@ _CANONICAL_POS = {
     'IN':          (-4.5,  0.0),
     'OUT':         ( 4.5,  0.0),
     'TUBES':       ( 0.0, -3.5),
-    'INTENDRILS':  (-3.5,  3.5),
-    'OUTTENDRILS': ( 3.5,  3.5),
+    'INTENDRILS':  (-4.5,  3.5),
+    'OUTTENDRILS': ( 4.5,  3.5),
     'OTHERS':      ( 0.0,  4.5),
 }
 
@@ -22,6 +22,9 @@ _CANONICAL_POS = {
 #   fluxes → RdPu_r : p=0 (significant) = dark purple, p=1 = light
 _BLOCK_CMAP = 'RdYlGn'
 _FLUX_CMAP  = 'RdPu_r'
+
+# Floor for LogNorm (avoids log(0) when a p-value is exactly 0)
+_PVAL_FLOOR = 1e-6
 
 
 # ── Helper: layout ────────────────────────────────────────────────────────────
@@ -60,6 +63,14 @@ def _linewidths(flux_dict, lw_min=0.8, lw_max=9.0):
     return {k: lw_min + s[i] * (lw_max - lw_min) for i, k in enumerate(keys)}
 
 
+def _log_norm(value_dicts):
+    """Build a LogNorm spanning all p-values found in *value_dicts*."""
+    pvals = [v['p_value'] for d in value_dicts for v in d.values()]
+    pos_pvals = [p for p in pvals if p > 0.0]
+    vmin = max(_PVAL_FLOOR, min(pos_pvals)) if pos_pvals else _PVAL_FLOOR
+    return mcolors.LogNorm(vmin=vmin, vmax=1.0)
+
+
 # ── Helper: drawing primitives ────────────────────────────────────────────────
 
 def _offset_endpoints(x0, y0, x1, y1, r0, r1):
@@ -88,34 +99,41 @@ def _draw_self_loop(ax, x, y, r, color, lw):
 
 # ── Core scene renderer ───────────────────────────────────────────────────────
 
-def _draw_scene(ax, block_dict, flux_dict, radii, lws, pos,
-                block_cmap, flux_cmap, norm,
+def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
+                radii, lws, pos,
+                block_cmap, flux_cmap, block_norm, flux_norm,
                 show_block_color, show_block_size,
                 show_flux_color, show_flux_size,
-                neutral_r=0.55, neutral_lw=2.0):
+                neutral_r=0.55, neutral_lw=2.0,
+                neutral_arrow_color='black',
+                unvalidated_color='0.70'):
     """Draw one complete bowtie panel onto *ax*.
 
     Parameters
     ----------
-    show_block_color : bool   – colour blocks by their p-value
-    show_block_size  : bool   – size blocks by log(obs)
-    show_flux_color  : bool   – colour arrows by their p-value
-    show_flux_size   : bool   – size arrows by log(obs)
-    neutral_r        : float  – uniform radius when show_block_size=False
-    neutral_lw       : float  – uniform linewidth when show_flux_size=False
+    obs_flux_dict       : dict  – flux entries with obs > 0 only
+    validated_flux_keys : set   – keys whose p-value passes the significance threshold
+    show_block_color    : bool  – colour blocks by their p-value
+    show_block_size     : bool  – size blocks by log(obs)
+    show_flux_color     : bool  – colour validated arrows by p-value; gray otherwise
+    show_flux_size      : bool  – size arrows by log(obs)
+    neutral_arrow_color : str   – arrow colour when show_flux_color=False
+    unvalidated_color   : str   – arrow colour for non-validated fluxes
     """
     # ── arrows (drawn first, behind circles) ─────────────────────────────────
-    for fkey, fval in flux_dict.items():
-        if type(fkey) is not tuple:
-            src, tgt = fkey.split('->')
-        else:
-            src, tgt = fkey
+    for fkey, fval in obs_flux_dict.items():
+        src, tgt = fkey.split('->')
         if src not in pos or tgt not in pos:
             continue
-        lw    = lws.get(fkey, neutral_lw) if show_flux_size else neutral_lw
-        color = flux_cmap(norm(fval['p_value'])) if show_flux_color else '0.60'
-        r0    = radii.get(src, neutral_r) if show_block_size else neutral_r
-        r1    = radii.get(tgt, neutral_r) if show_block_size else neutral_r
+        lw = lws.get(fkey, neutral_lw) if show_flux_size else neutral_lw
+        if not show_flux_color:
+            color = neutral_arrow_color
+        elif fkey in validated_flux_keys:
+            color = flux_cmap(flux_norm(max(fval['p_value'], _PVAL_FLOOR)))
+        else:
+            color = unvalidated_color
+        r0 = radii.get(src, neutral_r) if show_block_size else neutral_r
+        r1 = radii.get(tgt, neutral_r) if show_block_size else neutral_r
 
         if src == tgt:
             _draw_self_loop(ax, pos[src][0], pos[src][1], r0, color, lw)
@@ -133,7 +151,7 @@ def _draw_scene(ax, block_dict, flux_dict, radii, lws, pos,
     for b, bval in block_dict.items():
         x, y  = pos[b]
         r     = radii[b] if show_block_size else neutral_r
-        color = block_cmap(norm(bval['p_value'])) if show_block_color else '0.82'
+        color = block_cmap(block_norm(max(bval['p_value'], _PVAL_FLOOR))) if show_block_color else '0.82'
         ax.add_patch(plt.Circle((x, y), r, color=color, ec='black', lw=0.9, zorder=3))
         fs = max(6, int(10 * r))
         ax.text(x, y + r * 0.18, b,
@@ -152,9 +170,19 @@ def _draw_scene(ax, block_dict, flux_dict, radii, lws, pos,
     ax.axis('off')
 
 
+def _add_colorbar(fig, ax, cmap, norm, label, shrink=0.65, pad=0.02):
+    """Attach a horizontal colorbar with log-scale ticks."""
+    cb = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+                      ax=ax, shrink=shrink, pad=pad,
+                      orientation='horizontal', label=label)
+    cb.ax.xaxis.set_major_formatter(plt.FuncFormatter(
+        lambda x, _: f'{x:.0e}' if x < 0.01 else f'{x:.2f}'))
+    return cb
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def plot_bowtie(block_dict, flux_dict, figsize=(7, 6)):
+def plot_bowtie(block_dict, flux_dict, alpha=0.05, figsize=(7, 6)):
     """Draw three bowtie diagrams from the output of :func:`sam_bowtie.validate`.
 
     Parameters
@@ -165,63 +193,68 @@ def plot_bowtie(block_dict, flux_dict, figsize=(7, 6)):
     flux_dict : dict
         Keys = ``"src->tgt"`` strings.
         Values = ``{'obs': float, 'count_sample': list, 'p_value': float}``.
+    alpha : float
+        Significance threshold. Fluxes with p-value ≤ alpha are "validated"
+        and coloured by their p-value in Figures 2 and 3; others are gray.
     figsize : tuple
-        ``(width, height)`` in inches *per subplot*.
+        ``(width, height)`` in inches for *each* figure.
 
     Returns
     -------
-    fig : matplotlib.figure.Figure
-        Figure with three side-by-side subplots:
-
-        1. **Blocks** – circle size ∝ log(obs), circle colour = p-value.
-        2. **Fluxes** – arrow width ∝ log(obs), arrow colour = p-value.
-        3. **Combined** – both, with two separate colour scales.
+    fig1, fig2, fig3 : matplotlib.figure.Figure
+        1. **Blocks** – size ∝ log(obs), colour = p-value (log scale).
+           All observed fluxes shown in black.
+        2. **Fluxes** – width ∝ log(obs), validated fluxes coloured by
+           p-value (log scale), non-validated in gray.
+        3. **Combined** – both colour scales together.
     """
-    blocks = list(block_dict.keys())
-    pos    = _positions(blocks)
-    rmap   = _radii(block_dict)
-    lwmap  = _linewidths(flux_dict)
-    norm   = mcolors.Normalize(vmin=0.0, vmax=1.0)
-    bcmap  = plt.get_cmap(_BLOCK_CMAP)
-    fcmap  = plt.get_cmap(_FLUX_CMAP)
+    blocks     = list(block_dict.keys())
+    pos        = _positions(blocks)
+    rmap       = _radii(block_dict)
+    obs_flux   = {k: v for k, v in flux_dict.items() if v['obs'] > 0}
+    lwmap      = _linewidths(obs_flux)
+    valid_keys = {k for k, v in obs_flux.items() if v['p_value'] <= alpha}
+    bnorm      = _log_norm([block_dict])
+    fnorm      = _log_norm([obs_flux]) if obs_flux else bnorm
+    bcmap      = plt.get_cmap(_BLOCK_CMAP)
+    fcmap      = plt.get_cmap(_FLUX_CMAP)
 
-    fig, axes = plt.subplots(1, 3, figsize=(figsize[0] * 3, figsize[1]))
-    fig.subplots_adjust(wspace=0.30)
+    common = dict(radii=rmap, lws=lwmap, pos=pos,
+                  block_norm=bnorm, flux_norm=fnorm,
+                  neutral_r=0.55, neutral_lw=2.0)
 
-    # ── Panel 1: block sizes + block p-value colours ─────────────────────────
-    _draw_scene(axes[0], block_dict, flux_dict, rmap, lwmap, pos,
-                block_cmap=bcmap, flux_cmap=bcmap, norm=norm,
-                show_block_color=True,  show_block_size=True,
-                show_flux_color=False,  show_flux_size=False,
-                neutral_lw=1.5)
-    axes[0].set_title('Blocks\n(size ∝ log n, colour = p-value)', fontsize=9)
-    plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=bcmap),
-                 ax=axes[0], shrink=0.55, pad=0.02,
-                 orientation='horizontal', label='p-value (blocks)')
+    # ── Figure 1: block sizes + block p-value colours; observed fluxes in black
+    fig1, ax1 = plt.subplots(figsize=figsize)
+    _draw_scene(ax1, block_dict, obs_flux, validated_flux_keys=set(),
+                block_cmap=bcmap, flux_cmap=bcmap,
+                show_block_color=True, show_block_size=True,
+                show_flux_color=False, show_flux_size=False,
+                neutral_arrow_color='black', neutral_lw=1.5, **common)
+    ax1.set_title('Blocks\n(size ∝ log n, colour = p-value)', fontsize=10)
+    _add_colorbar(fig1, ax1, bcmap, bnorm, 'p-value (blocks)')
+    fig1.tight_layout()
 
-    # ── Panel 2: flux widths + flux p-value colours ──────────────────────────
-    _draw_scene(axes[1], block_dict, flux_dict, rmap, lwmap, pos,
-                block_cmap=fcmap, flux_cmap=fcmap, norm=norm,
+    # ── Figure 2: flux widths + p-value colours; non-validated in gray
+    fig2, ax2 = plt.subplots(figsize=figsize)
+    _draw_scene(ax2, block_dict, obs_flux, validated_flux_keys=valid_keys,
+                block_cmap=fcmap, flux_cmap=fcmap,
                 show_block_color=False, show_block_size=False,
-                show_flux_color=True,   show_flux_size=True,
-                neutral_r=0.55)
-    axes[1].set_title('Fluxes\n(width ∝ log flux, colour = p-value)', fontsize=9)
-    plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=fcmap),
-                 ax=axes[1], shrink=0.55, pad=0.02,
-                 orientation='horizontal', label='p-value (fluxes)')
+                show_flux_color=True,  show_flux_size=True,
+                neutral_r=0.55, **common)
+    ax2.set_title(f'Fluxes\n(width ∝ log flux, validated coloured [α={alpha}], non-validated gray)',
+                  fontsize=10)
+    _add_colorbar(fig2, ax2, fcmap, fnorm, 'p-value (fluxes)')
+    fig2.tight_layout()
 
-    # ── Panel 3: combined – two separate colour scales ───────────────────────
-    _draw_scene(axes[2], block_dict, flux_dict, rmap, lwmap, pos,
-                block_cmap=bcmap, flux_cmap=fcmap, norm=norm,
-                show_block_color=True,  show_block_size=True,
-                show_flux_color=True,   show_flux_size=True)
-    axes[2].set_title('Combined\n(separate colour scales)', fontsize=9)
-    plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=bcmap),
-                 ax=axes[2], shrink=0.45, pad=0.02,
-                 orientation='horizontal', label='p-value (blocks)')
-    plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=fcmap),
-                 ax=axes[2], shrink=0.45, pad=0.10,
-                 orientation='horizontal', label='p-value (fluxes)')
+    # ── Figure 3: combined – two separate colour scales
+    fig3, ax3 = plt.subplots(figsize=figsize)
+    _draw_scene(ax3, block_dict, obs_flux, validated_flux_keys=valid_keys,
+                block_cmap=bcmap, flux_cmap=fcmap,
+                show_block_color=True, show_block_size=True,
+                show_flux_color=True,  show_flux_size=True, **common)
+    ax3.set_title('Combined\n(separate colour scales)', fontsize=10)
+    _add_colorbar(fig3, ax3, bcmap, bnorm, 'p-value (blocks)', shrink=0.50, pad=0.02)
+    _add_colorbar(fig3, ax3, fcmap, fnorm, 'p-value (fluxes)', shrink=0.50, pad=0.12)
+    fig3.tight_layout()
 
-    fig.tight_layout()
-    return fig
+    return fig1, fig2, fig3
