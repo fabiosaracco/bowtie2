@@ -20,7 +20,7 @@ _CANONICAL_POS = {
 # Default colormaps:
 #   blocks → RdYlGn : p=0 (significant) = red, p=1 = green
 #   fluxes → RdPu_r : p=0 (significant) = dark purple, p=1 = light
-_BLOCK_CMAP = 'hot_r'
+_BLOCK_CMAP = 'Wistia'
 _FLUX_CMAP  = 'cool'
 
 # Floor for LogNorm (avoids log(0) when a p-value is exactly 0)
