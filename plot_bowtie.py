@@ -220,7 +220,7 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
                                   mutation_scale=10,
                                   connectionstyle='arc3,rad=0.08'),
                               zorder=arrow_zorder)
-            if arrow_border and arrow_zorder == 2:
+            if arrow_border:
                 arrow_patch = getattr(ann, 'arrow_patch', None)
                 if arrow_patch is not None:
                     arrow_patch.set_path_effects(
@@ -262,13 +262,13 @@ def _add_colorbar(fig, ax, cmap, norm, label, fdr_th=None, shrink=0.65, pad=0.02
     cb.ax.xaxis.set_major_formatter(plt.FuncFormatter(
         lambda x, _: f'{x:.0e}' if x < 0.01 else f'{x:.2f}'))
     if fdr_th is not None and fdr_th > 0:
-        cb.ax.axvline(x=fdr_th, color='red', linestyle='--', linewidth=1.5)
+        cb.ax.axvline(x=fdr_th, color='red', linestyle='-', linewidth=1.5)
     return cb
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def plot_bowtie_blocks(block_dict, alpha=0.05, figsize=(7, 6)):
+def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6)):
     """Draw a bowtie diagram coloured by block-level statistical validation.
 
     Parameters
@@ -276,6 +276,8 @@ def plot_bowtie_blocks(block_dict, alpha=0.05, figsize=(7, 6)):
     block_dict : dict
         Keys = block labels (``'SCC'``, ``'IN'``, ``'OUT'``, …).
         Values = ``{'obs': int, 'p_value': float, ...}``.
+    flux_dict : dict, optional
+        If provided, observed fluxes are drawn as thin black arrows.
     alpha : float
         Nominal FDR level. Only blocks that pass Benjamini-Hochberg FDR
         correction are coloured; the rest are shown in neutral gray.
@@ -296,19 +298,22 @@ def plot_bowtie_blocks(block_dict, alpha=0.05, figsize=(7, 6)):
     blocks = list(block_dict.keys())
     pos    = _positions(blocks)
     rmap   = _radii(block_dict)
+    obs_flux = ({k: v for k, v in flux_dict.items() if v['obs'] > 0}
+                if flux_dict is not None else {})
 
     # ── Norm (from validated p-values only; fallback to fdr_th if all are 0)
     bnorm = _log_norm([block_dict], validated_keys=validated_keys, fdr_th=fdr_th)
     bcmap = plt.get_cmap(_BLOCK_CMAP)
 
     fig, ax = plt.subplots(figsize=figsize)
-    _draw_scene(ax, block_dict, obs_flux_dict={}, validated_flux_keys=set(),
+    _draw_scene(ax, block_dict, obs_flux_dict=obs_flux, validated_flux_keys=set(),
                 radii=rmap, lws={}, pos=pos,
                 block_cmap=bcmap, flux_cmap=bcmap, block_norm=bnorm, flux_norm=bnorm,
                 show_block_color=True, show_block_size=True,
                 show_flux_color=False, show_flux_size=False,
                 neutral_r=0.55, neutral_lw=2.0,
                 neutral_block_color='0.82',
+                neutral_arrow_color='black',
                 validated_block_keys=validated_keys,
                 arrow_border=False)
     ax.set_title(f'Blocks  (size ∝ log n, colour = p-value, FDR α={alpha})', fontsize=10)
