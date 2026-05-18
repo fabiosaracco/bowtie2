@@ -131,7 +131,10 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
     """
     # ── arrows (drawn first, behind circles) ─────────────────────────────────
     for fkey, fval in obs_flux_dict.items():
-        src, tgt = fkey.split('->')
+        if type(fkey) is not tuple:
+            src, tgt = fkey.split('->')
+        else:
+            src, tgt = fkey
         if src not in pos or tgt not in pos:
             continue
         lw = lws.get(fkey, neutral_lw) if show_flux_size else neutral_lw
