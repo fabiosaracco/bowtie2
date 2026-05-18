@@ -111,14 +111,23 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
 
     Parameters
     ----------
-    obs_flux_dict       : dict  – flux entries with obs > 0 only
-    validated_flux_keys : set   – keys whose p-value passes the significance threshold
-    show_block_color    : bool  – colour blocks by their p-value
-    show_block_size     : bool  – size blocks by log(obs)
-    show_flux_color     : bool  – colour validated arrows by p-value; gray otherwise
-    show_flux_size      : bool  – size arrows by log(obs)
-    neutral_arrow_color : str   – arrow colour when show_flux_color=False
-    unvalidated_color   : str   – arrow colour for non-validated fluxes
+    obs_flux_dict       : dict              – flux entries with obs > 0 only
+    validated_flux_keys : set               – keys whose p-value passes the significance threshold
+    radii               : dict[str, float]  – circle radius per block
+    lws                 : dict[str, float]  – arrow linewidth per flux key
+    pos                 : dict[str, tuple]  – (x, y) position per block
+    block_cmap          : Colormap          – colormap applied to block circles
+    flux_cmap           : Colormap          – colormap applied to validated arrows
+    block_norm          : Normalize         – norm (log-scale) for block p-values
+    flux_norm           : Normalize         – norm (log-scale) for flux p-values
+    show_block_color    : bool              – colour blocks by their p-value
+    show_block_size     : bool              – size blocks by log(obs)
+    show_flux_color     : bool              – colour validated arrows by p-value; non-validated gray
+    show_flux_size      : bool              – size arrows by log(obs)
+    neutral_r           : float             – uniform radius used when show_block_size=False
+    neutral_lw          : float             – uniform linewidth used when show_flux_size=False
+    neutral_arrow_color : str               – arrow colour when show_flux_color=False
+    unvalidated_color   : str               – arrow colour for non-validated observed fluxes
     """
     # ── arrows (drawn first, behind circles) ─────────────────────────────────
     for fkey, fval in obs_flux_dict.items():
@@ -219,39 +228,41 @@ def plot_bowtie(block_dict, flux_dict, alpha=0.05, figsize=(7, 6)):
     bcmap      = plt.get_cmap(_BLOCK_CMAP)
     fcmap      = plt.get_cmap(_FLUX_CMAP)
 
+    # Arguments shared across all three scenes
     common = dict(radii=rmap, lws=lwmap, pos=pos,
-                  block_norm=bnorm, flux_norm=fnorm,
-                  neutral_r=0.55, neutral_lw=2.0)
+                  block_norm=bnorm, flux_norm=fnorm)
 
-    # ── Figure 1: block sizes + block p-value colours; observed fluxes in black
+    # ── Figure 1: block sizes + block p-value colours; all observed fluxes in black
     fig1, ax1 = plt.subplots(figsize=figsize)
     _draw_scene(ax1, block_dict, obs_flux, validated_flux_keys=set(),
                 block_cmap=bcmap, flux_cmap=bcmap,
                 show_block_color=True, show_block_size=True,
                 show_flux_color=False, show_flux_size=False,
-                neutral_arrow_color='black', neutral_lw=1.5, **common)
+                neutral_r=0.55, neutral_lw=1.5,
+                neutral_arrow_color='black', **common)
     ax1.set_title('Blocks\n(size ∝ log n, colour = p-value)', fontsize=10)
     _add_colorbar(fig1, ax1, bcmap, bnorm, 'p-value (blocks)')
     fig1.tight_layout()
 
-    # ── Figure 2: flux widths + p-value colours; non-validated in gray
+    # ── Figure 2: flux widths + p-value colours; non-validated observed fluxes in gray
     fig2, ax2 = plt.subplots(figsize=figsize)
     _draw_scene(ax2, block_dict, obs_flux, validated_flux_keys=valid_keys,
                 block_cmap=fcmap, flux_cmap=fcmap,
                 show_block_color=False, show_block_size=False,
                 show_flux_color=True,  show_flux_size=True,
-                neutral_r=0.55, **common)
+                neutral_r=0.55, neutral_lw=2.0, **common)
     ax2.set_title(f'Fluxes\n(width ∝ log flux, validated coloured [α={alpha}], non-validated gray)',
                   fontsize=10)
     _add_colorbar(fig2, ax2, fcmap, fnorm, 'p-value (fluxes)')
     fig2.tight_layout()
 
-    # ── Figure 3: combined – two separate colour scales
+    # ── Figure 3: combined – block colours (RdYlGn) + flux colours (RdPu_r)
     fig3, ax3 = plt.subplots(figsize=figsize)
     _draw_scene(ax3, block_dict, obs_flux, validated_flux_keys=valid_keys,
                 block_cmap=bcmap, flux_cmap=fcmap,
                 show_block_color=True, show_block_size=True,
-                show_flux_color=True,  show_flux_size=True, **common)
+                show_flux_color=True,  show_flux_size=True,
+                neutral_r=0.55, neutral_lw=2.0, **common)
     ax3.set_title('Combined\n(separate colour scales)', fontsize=10)
     _add_colorbar(fig3, ax3, bcmap, bnorm, 'p-value (blocks)', shrink=0.50, pad=0.02)
     _add_colorbar(fig3, ax3, fcmap, fnorm, 'p-value (fluxes)', shrink=0.50, pad=0.12)
