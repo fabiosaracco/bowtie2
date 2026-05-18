@@ -32,7 +32,7 @@ HUB_TH=5
 GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=False
-GAUGE_PIVOT='min'
+GAUGE_PIVOT=None
 
 
 
@@ -140,12 +140,13 @@ def main():
         # check if the file was created/modified today
         #file_mtime = dt.date.fromtimestamp(os.path.getmtime(file_name))
         #if file_mtime == dt.date.today():
-        with open(file_name, 'rb') as f:
-            old_decm=pickle.load(f)
-        if hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'converged') and old_decm.sol.converged and old_decm.sol.mre<TOL:
-            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for decm with pytorch and theta already exists. Skipping...')
-            sys.stdout.flush()
-            return
+        
+        #with open(file_name, 'rb') as f:
+        #    old_decm=pickle.load(f)
+        #if hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'converged') and old_decm.sol.converged and old_decm.sol.mre<TOL:
+        #    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for decm with pytorch and theta already exists. Skipping...')
+        #    sys.stdout.flush()
+        #    return
 
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
         decm=DECMModel(aux[0], aux[1], aux[2], aux[3])
@@ -166,7 +167,13 @@ def main():
     
     try:
         decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, gauge_pivot=GAUGE_PIVOT)
-        with open(file_name, 'wb') as f:
+        final_file_name=file_name
+        counter=0
+        while os.path.exists(file_name):
+            final_file_name=file_name.replace('.pkl', f'_{counter}.pkl')
+            counter+=1
+        
+        with open(final_file_name, 'wb') as f:
             pickle.dump(decm, f)
         # elapsed time (in hours and minutes)
         t_ets=decm.sol.elapsed_time
