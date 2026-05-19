@@ -197,7 +197,8 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
         elif fkey in validated_flux_keys:
             color = flux_cmap(flux_norm(max(fval['p_value'], _PVAL_FLOOR)))
         else:
-            color = unvalidated_color
+            rgba = flux_cmap(flux_norm(max(fval['p_value'], _PVAL_FLOOR)))
+            color = (rgba[0], rgba[1], rgba[2], 0.5)
         r0 = radii.get(src, neutral_r) if show_block_size else neutral_r
         r1 = radii.get(tgt, neutral_r) if show_block_size else neutral_r
 
@@ -231,11 +232,13 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
         x, y  = pos[b]
         r     = radii[b] if show_block_size else neutral_r
         is_validated = (validated_block_keys is None or b in validated_block_keys)
-        if show_block_color and is_validated:
+        if show_block_color:
             color = block_cmap(block_norm(max(bval['p_value'], _PVAL_FLOOR)))
+            block_alpha = 1.0 if is_validated else 0.5
         else:
             color = neutral_block_color
-        ax.add_patch(plt.Circle((x, y), r, color=color, ec='black', lw=0.9, zorder=4))
+            block_alpha = 1.0
+        ax.add_patch(plt.Circle((x, y), r, color=color, alpha=block_alpha, ec='black', lw=0.9, zorder=4))
         fs = max(6, int(10 * r))
         ax.text(x, y + r * 0.18, b,
                 ha='center', va='center', fontsize=fs, fontweight='bold', zorder=5,
@@ -263,6 +266,9 @@ def _add_colorbar(fig, ax, cmap, norm, label, fdr_th=None, shrink=0.65, pad=0.02
         lambda x, _: f'{x:.0e}' if x < 0.01 else f'{x:.2f}'))
     if fdr_th is not None and fdr_th > 0:
         cb.ax.axvline(x=fdr_th, color='red', linestyle='-', linewidth=1.5)
+        cb.ax.text(fdr_th, 1.02, 'FDR effective th', color='red',
+                   ha='center', va='bottom', fontsize=7,
+                   transform=cb.ax.get_xaxis_transform())
     return cb
 
 
