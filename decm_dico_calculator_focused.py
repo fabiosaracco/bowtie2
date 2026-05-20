@@ -24,15 +24,15 @@ DATASET='crisi'
 DICO=2
 
 
-MAX_TIME_HOURS=4
+MAX_TIME_HOURS=8
 MAX_ITER=5000
 TOL=1e-5
 ANDERSON=10
-HUB_TH=5
+HUB_TH=0
 GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=False
-GAUGE_PIVOT=None
+GAUGE_PIVOT='min'
 
 
 
@@ -167,14 +167,7 @@ def main():
     
     try:
         decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, gauge_pivot=GAUGE_PIVOT)
-        final_file_name=file_name
-        counter=0
-        while os.path.exists(file_name):
-            final_file_name=file_name.replace('.pkl', f'_{counter}.pkl')
-            counter+=1
-        
-        with open(final_file_name, 'wb') as f:
-            pickle.dump(decm, f)
+
         # elapsed time (in hours and minutes)
         t_ets=decm.sol.elapsed_time
         eth=t_ets//3600
@@ -182,11 +175,27 @@ def main():
     
         if decm.sol.converged:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM converged in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.sol.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
-            sys.stdout.flush()
+            
         else:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM did not converge in {int(eth):2d} h and {etm:2.2f} m, MRE={decm.sol.mre:.4e}, (peak RAM={decm.sol.peak_ram_bytes//1024**2} MB)')
-            sys.stdout.flush()
+        sys.stdout.flush()
 
+        final_file_name=file_name
+        counter=0
+        if os.path.exists(file_name):
+            final_file_name=file_name.replace('.pkl', f'_{counter}.pkl')
+        while os.path.exists(final_file_name):
+            counter+=1
+            final_file_name=file_name.replace('.pkl', f'_{counter}.pkl')
+        
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] file name: {final_file_name}')
+        sys.stdout.flush()
+        with open(final_file_name, 'wb') as f:
+            pickle.dump(decm, f)
+        
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Saved!')
+        sys.stdout.flush()
+        
     except Exception as e:
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving DECM with pytorch and theta: {e}')
         sys.stdout.flush()

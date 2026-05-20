@@ -265,7 +265,7 @@ def _add_colorbar(fig, ax, cmap, norm, label, fdr_th=None, shrink=0.65, pad=0.02
     cb.ax.xaxis.set_major_formatter(plt.FuncFormatter(
         lambda x, _: f'{x:.0e}' if x < 0.01 else f'{x:.2f}'))
     if fdr_th is not None and fdr_th > 0:
-        cb.ax.axvline(x=fdr_th, color='red', linestyle='-', linewidth=1.5)
+        cb.ax.axvline(x=fdr_th, color='magenta', linestyle='-', linewidth=1.5)
         cb.ax.text(fdr_th, 1.04, 'FDR effective th', color='red',
                    ha='center', va='bottom', fontsize=10,
                    transform=cb.ax.get_xaxis_transform())
