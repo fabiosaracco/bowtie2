@@ -257,24 +257,33 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
     ax.axis('off')
 
 
-def _add_colorbar(fig, ax, cmap, norm, label, fdr_th=None, shrink=0.65, pad=0.02):
-    """Attach a horizontal colorbar with log-scale ticks and an optional FDR marker."""
+def _add_colorbar(fig, ax, cmap, norm, label, fdr_th=None, shrink=0.65, pad=0.02, orientation='horizontal'):
+    """Attach a colorbar with log-scale ticks and an optional FDR marker."""
     cb = fig.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap),
                       ax=ax, shrink=shrink, pad=pad,
-                      orientation='horizontal', label=label)
-    cb.ax.xaxis.set_major_formatter(plt.FuncFormatter(
-        lambda x, _: f'{x:.0e}' if x < 0.01 else f'{x:.2f}'))
-    if fdr_th is not None and fdr_th > 0:
-        cb.ax.axvline(x=fdr_th, color='darkmagenta', linestyle='-', linewidth=1.5)
-        cb.ax.text(fdr_th, 1.04, 'FDR effective th', color='darkmagenta',
-                   ha='center', va='bottom', fontsize=10,
-                   transform=cb.ax.get_xaxis_transform())
+                      orientation=orientation, label=label)
+    fmt = plt.FuncFormatter(lambda x, _: f'{x:.0e}' if x < 0.01 else f'{x:.2f}')
+    if orientation == 'horizontal':
+        cb.ax.xaxis.set_major_formatter(fmt)
+        if fdr_th is not None and fdr_th > 0:
+            cb.ax.axvline(x=fdr_th, color='darkmagenta', linestyle='-', linewidth=1.5)
+            cb.ax.text(fdr_th, 1.04, 'FDR effective th', color='darkmagenta',
+                       ha='center', va='bottom', fontsize=10,
+                       transform=cb.ax.get_xaxis_transform())
+    else:
+        cb.ax.yaxis.set_major_formatter(fmt)
+        if fdr_th is not None and fdr_th > 0:
+            cb.ax.axhline(y=fdr_th, color='darkmagenta', linestyle='-', linewidth=1.5)
+            cb.ax.text(1.05, fdr_th, 'FDR effective th', color='darkmagenta',
+                       ha='left', va='center', fontsize=10,
+                       transform=cb.ax.get_yaxis_transform())
     return cb
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6)):
+def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6), ax=None,
+                       vmin=None, show_colorbar=True):
     """Draw a bowtie diagram coloured by block-level statistical validation.
 
     Parameters
@@ -288,7 +297,14 @@ def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6)):
         Nominal FDR level. Only blocks that pass Benjamini-Hochberg FDR
         correction are coloured; the rest are shown in neutral gray.
     figsize : tuple
-        ``(width, height)`` in inches.
+        ``(width, height)`` in inches. Ignored if *ax* is provided.
+    ax : matplotlib.axes.Axes, optional
+        If provided, draw into this axes instead of creating a new figure.
+    vmin : float, optional
+        Minimum value for the colour scale. If ``None`` (default) it is
+        computed automatically from the data. The maximum is always 1.
+    show_colorbar : bool
+        If ``False``, the colorbar is not drawn. Default ``True``.
 
     Returns
     -------
@@ -309,9 +325,14 @@ def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6)):
 
     # ── Norm (from validated p-values only; fallback to fdr_th if all are 0)
     bnorm = _log_norm([block_dict], validated_keys=validated_keys, fdr_th=fdr_th)
+    if vmin is not None:
+        bnorm = mcolors.LogNorm(vmin=vmin, vmax=1.0)
     bcmap = plt.get_cmap(_BLOCK_CMAP)
 
-    fig, ax = plt.subplots(figsize=figsize)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure()
     _draw_scene(ax, block_dict, obs_flux_dict=obs_flux, validated_flux_keys=set(),
                 radii=rmap, lws={}, pos=pos,
                 block_cmap=bcmap, flux_cmap=bcmap, block_norm=bnorm, flux_norm=bnorm,
@@ -323,13 +344,15 @@ def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6)):
                 validated_block_keys=validated_keys,
                 arrow_border=False)
     ax.set_title(f'Blocks  (size ∝ log n, colour = p-value, FDR α={alpha})', fontsize=10)
-    _add_colorbar(fig, ax, bcmap, bnorm, 'p-value (blocks)',
-                  fdr_th=fdr_th if fdr_th > 0 else None)
+    if show_colorbar:
+        _add_colorbar(fig, ax, bcmap, bnorm, 'p-value (blocks)',
+                      fdr_th=fdr_th if fdr_th > 0 else None)
     fig.tight_layout()
     return fig
 
 
-def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6)):
+def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6), ax=None,
+                       vmin=None, show_colorbar=True):
     """Draw a bowtie diagram coloured by flux-level statistical validation.
 
     Parameters
@@ -341,7 +364,14 @@ def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6)):
         Nominal FDR level. Only fluxes that pass Benjamini-Hochberg FDR
         correction are coloured and drawn in front; others are gray and behind.
     figsize : tuple
-        ``(width, height)`` in inches.
+        ``(width, height)`` in inches. Ignored if *ax* is provided.
+    ax : matplotlib.axes.Axes, optional
+        If provided, draw into this axes instead of creating a new figure.
+    vmin : float, optional
+        Minimum value for the colour scale. If ``None`` (default) it is
+        computed automatically from the data. The maximum is always 1.
+    show_colorbar : bool
+        If ``False``, the colorbar is not drawn. Default ``True``.
 
     Returns
     -------
@@ -373,9 +403,14 @@ def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6)):
 
     # ── Norm (from validated flux p-values only; fallback to fdr_th if all are 0)
     fnorm = _log_norm([obs_flux], validated_keys=validated_keys, fdr_th=fdr_th)
+    if vmin is not None:
+        fnorm = mcolors.LogNorm(vmin=vmin, vmax=1.0)
     fcmap = plt.get_cmap(_FLUX_CMAP)
 
-    fig, ax = plt.subplots(figsize=figsize)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure()
     _draw_scene(ax, dummy_block_dict, obs_flux_dict=obs_flux,
                 validated_flux_keys=validated_keys,
                 radii=rmap, lws=lwmap, pos=pos,
@@ -387,7 +422,8 @@ def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6)):
                 validated_block_keys=None,
                 arrow_border=True)
     ax.set_title(f'Fluxes  (width ∝ log flux, FDR α={alpha})', fontsize=10)
-    _add_colorbar(fig, ax, fcmap, fnorm, 'p-value (fluxes)',
-                  fdr_th=fdr_th if fdr_th > 0 else None)
+    if show_colorbar:
+        _add_colorbar(fig, ax, fcmap, fnorm, 'p-value (fluxes)',
+                      fdr_th=fdr_th if fdr_th > 0 else None)
     fig.tight_layout()
     return fig
