@@ -100,9 +100,9 @@ def main():
                 if hasattr(qdecm, 'sol') and qdecm.sol.converged:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d}...')
                     sys.stdout.flush()
-                    block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=N_RUNS, verbose=True)
+                    lwcc_stats=validate(el_dico[d], qdecm, n_runs=N_RUNS, verbose=True)
                     with open(pvalue_lwcc_filename, 'wb') as f:
-                        pickle.dump(block_dict, f)
+                        pickle.dump(lwcc_stats, f)
                     
 
 if __name__ == "__main__":
