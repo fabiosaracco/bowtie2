@@ -292,7 +292,7 @@ def main():
 
     for dataset in tqdm(datasets):
         dicos = sorted(dico_dict[dataset].keys())
-        for dico in dicos:
+        for dico in tqdm(dicos, leave=False):
             fluxes=guarino2dict_fluxes(dataset, dico)
             rt_fluxes_0 = right_tailer(fluxes[0])
             rt_fluxes_1 = right_tailer(fluxes[1])
