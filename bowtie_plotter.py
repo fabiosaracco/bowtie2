@@ -122,6 +122,8 @@ def guarino2dict_fluxes(dataset, dico):
         target = guarino_translator.get(target, target)
         key = '->'.join([source, target])
 
+        if key not in flux_dict_0.keys():
+            continue  # skip if the key is not in flux_dict_0
         flux_dict_bipartite[key]['obs'] = flux_dict_0[key]['obs']
         flux_dict_bipartite[key]['sample'] = cacca[:, i]
         _ge = np.sum(cacca[:, i] >= flux_dict_bipartite[key]['obs'])
