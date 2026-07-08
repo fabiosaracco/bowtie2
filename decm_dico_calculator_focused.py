@@ -20,18 +20,21 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-DATASET='crisi'
-DICO=2
+DATASET='ita_elections'
+#DICO=0
+#DICO=1
+#DICO=2
+DICO=3
 
 
-MAX_TIME_HOURS=8
+MAX_TIME_HOURS=6
 MAX_ITER=5000
 TOL=1e-5
 ANDERSON=10
-HUB_TH=0
+HUB_TH=5
 GAMMA=0.
 MONITOR=False
-RECYCLE_SOL=False
+RECYCLE_SOL=True
 GAUGE_PIVOT='min'
 
 
@@ -131,31 +134,30 @@ def main():
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
         return
     
-    if GAUGE_PIVOT is not None:
-        file_name=HOME+f'/tests/{dataset_name}_dico{dico_class}_decm_and_{ANDERSON}_gamma_{GAMMA}_hub_{HUB_TH}_gauge_{GAUGE_PIVOT}.pkl'
-    else:
-        file_name=HOME+f'/tests/{dataset_name}_dico{dico_class}_decm_and_{ANDERSON}_gamma_{GAMMA}_hub_{HUB_TH}.pkl'
+    file_name=HOME+f'/tests/{dataset_name}_dico{dico_class}_decm_final.pkl'
     
     if os.path.exists(file_name):
         # check if the file was created/modified today
         #file_mtime = dt.date.fromtimestamp(os.path.getmtime(file_name))
         #if file_mtime == dt.date.today():
         
-        #with open(file_name, 'rb') as f:
-        #    old_decm=pickle.load(f)
-        #if hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'converged') and old_decm.sol.converged and old_decm.sol.mre<TOL:
-        #    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for decm with pytorch and theta already exists. Skipping...')
-        #    sys.stdout.flush()
-        #    return
+        with open(file_name, 'rb') as f:
+            old_decm=pickle.load(f)
+        if hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'converged') and old_decm.sol.converged and old_decm.sol.mre<TOL:
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for decm with pytorch and theta already exists. Skipping...')
+            sys.stdout.flush()
+            return
 
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DECM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
         decm=DECMModel(aux[0], aux[1], aux[2], aux[3])
 
         # check if the existing solution can be used as a starting point
-        if RECYCLE_SOL and hasattr(old_decm, 'sol') and hasattr(old_decm.sol, 'mre') and old_decm.sol.mre>TOL:
+        if RECYCLE_SOL and hasattr(old_decm, 'sol'):
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Recycling existing non-converged solution...')
             ic=old_decm.sol.best_theta
         else:
+            # the previous run did not complete the evaluation
+            # and the existing solution cannot be used as a starting point
             ic="degrees"
         sys.stdout.flush()
 
@@ -166,7 +168,7 @@ def main():
 
     
     try:
-        decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, gauge_pivot=GAUGE_PIVOT)
+        decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False)
 
         # elapsed time (in hours and minutes)
         t_ets=decm.sol.elapsed_time
