@@ -17,3 +17,28 @@ def el2ks(el):
         s_out[i_s]+=w
         s_in[i_t]+=w
     return k_out, k_in, s_out, s_in, all_nodes
+
+
+def bic(model, decm_like=False):
+    """
+    Compute the Bayesian Information Criterion (BIC) for a given model.
+
+    Parameters:
+    model: one of dcms models
+    decm_like: bool, whether to use the DEC-M like formulation
+    Returns:
+    float: The BIC value.
+    """
+
+    num_parameters = len(model.sol.theta)
+    if decm_like:
+        n_nodes = num_parameters/4  
+    else:
+        n_nodes = num_parameters/2
+    n = n_nodes*(n_nodes-1)  # Number of observations
+
+    # as in the original BIC formula, 
+    # #we use the negative log-likelihood and the number of parameters 
+    # to compute the BIC value
+    bic_value = 2 * model.neg_log_likelihood + num_parameters * np.log(n)
+    return bic_value
