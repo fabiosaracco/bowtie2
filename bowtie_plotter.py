@@ -6,6 +6,7 @@
 MAX_TIME_HOURS = 1
 ALPHA = 0.01
 _PVAL_FLOOR = 10**-6
+OLD_BIDCM=True
 
 # --- Standard modules ---
 import os, pickle, platform, sys
@@ -59,12 +60,16 @@ from sam_bowtie import block_and_fluxes as bnf
 from plot_bowtie import plot_bowtie_blocks, plot_bowtie_fluxes, _add_colorbar
 from plot_bowtie import _fdr as fdr
 
+
 # --- Data folders ---
 DATA_FOLDER = HOME + 'dati_elezioni/'
 TEST_FOLDER = HOME + 'tests/'
 PVALUE_FOLDER = HOME + 'pvalues/'
 GUARINO_FOLDER = HOME + 'guarino_files/'
-BIPARTITE_FOLDER = HOME + 'BiDCM/'
+if OLD_BIDCM:
+    BIPARTITE_FOLDER = HOME + 'BiDCM/'
+else:
+    BIPARTITE_FOLDER = HOME + 'BiDCM2/'
 PLOT_FOLDER = HOME + 'plots/'
 
 
@@ -298,7 +303,10 @@ def main():
             fluxes=guarino2dict_fluxes(dataset, dico)
             rt_fluxes_0 = right_tailer(fluxes[0])
             rt_fluxes_1 = right_tailer(fluxes[1])
-            filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes.png'
+            if OLD_BIDCM:
+                filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes_old.png'
+            else:
+                filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes.png'
             fluxes_plotter([rt_fluxes_0, rt_fluxes_1], filename)
 
 
