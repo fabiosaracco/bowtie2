@@ -6,7 +6,7 @@
 MAX_TIME_HOURS = 1
 ALPHA = 0.01
 _PVAL_FLOOR = 10**-6
-OLD_BIDCM=True
+OLD_BIDCM=False
 
 # --- Standard modules ---
 import os, pickle, platform, sys
@@ -214,7 +214,7 @@ def guarino2dict_blocks_DCM(dataset, dico):
             block_dict_bipartite[key]['tail'] = 'right'
     return block_dict_bipartite, block_dict_0, flux_dict_0
 
-def fluxes_plotter(fluxes, filename):
+def fluxes_plotter(fluxes, filename, ufa=0.2):
     '''
     The function plots the right tail validation of the fluxes of the bowtie
     '''
@@ -235,8 +235,8 @@ def fluxes_plotter(fluxes, filename):
 
     # define the figure and axes
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(14, 6))
-    plot_bowtie_fluxes(fluxes[1], 0.01, ax=axs[0], show_colorbar=False, vmin=vmin)
-    plot_bowtie_fluxes(fluxes[0], 0.01, ax=axs[1], show_colorbar=False, vmin=vmin)
+    plot_bowtie_fluxes(fluxes[1], 0.01, ax=axs[0], show_colorbar=False, vmin=vmin, unvalidated_flux_alpha=ufa)
+    plot_bowtie_fluxes(fluxes[0], 0.01, ax=axs[1], show_colorbar=False, vmin=vmin, unvalidated_flux_alpha=ufa)
 
 
     bnorm = mcolors.LogNorm(vmin=vmin, vmax=1.0)
@@ -307,7 +307,7 @@ def main():
                 filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes_old.png'
             else:
                 filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes.png'
-            fluxes_plotter([rt_fluxes_0, rt_fluxes_1], filename)
+            fluxes_plotter([rt_fluxes_0, rt_fluxes_1], filename, ufa=0.1)
 
 
 if __name__ == "__main__":

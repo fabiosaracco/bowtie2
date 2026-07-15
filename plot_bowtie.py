@@ -156,6 +156,7 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
                 neutral_block_color='0.82',
                 neutral_arrow_color='black',
                 unvalidated_color='0.70',
+                unvalidated_flux_alpha=0.20,
                 validated_block_keys=None,
                 arrow_border=False):
     """Draw one complete bowtie panel onto *ax*.
@@ -180,6 +181,7 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
     neutral_block_color  : str               – fill colour for non-validated / uncoloured blocks
     neutral_arrow_color  : str               – arrow colour when show_flux_color=False
     unvalidated_color    : str               – arrow colour for non-validated observed fluxes
+    unvalidated_flux_alpha : float           – alpha for non-validated observed fluxes
     validated_block_keys : set | None        – block keys to colour; None = colour all
     arrow_border         : bool              – if True, draw a thin black stroke around validated arrows
     """
@@ -198,7 +200,7 @@ def _draw_scene(ax, block_dict, obs_flux_dict, validated_flux_keys,
             color = flux_cmap(flux_norm(max(fval['p_value'], _PVAL_FLOOR)))
         else:
             rgba = flux_cmap(flux_norm(max(fval['p_value'], _PVAL_FLOOR)))
-            color = (rgba[0], rgba[1], rgba[2], 0.5)
+            color = (rgba[0], rgba[1], rgba[2], unvalidated_flux_alpha)
         r0 = radii.get(src, neutral_r) if show_block_size else neutral_r
         r1 = radii.get(tgt, neutral_r) if show_block_size else neutral_r
 
@@ -352,7 +354,8 @@ def plot_bowtie_blocks(block_dict, flux_dict=None, alpha=0.05, figsize=(7, 6), a
 
 
 def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6), ax=None,
-                       vmin=None, show_colorbar=True):
+                       vmin=None, show_colorbar=True,
+                       unvalidated_flux_alpha=0.20):
     """Draw a bowtie diagram coloured by flux-level statistical validation.
 
     Parameters
@@ -372,6 +375,9 @@ def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6), ax=None,
         computed automatically from the data. The maximum is always 1.
     show_colorbar : bool
         If ``False``, the colorbar is not drawn. Default ``True``.
+    unvalidated_flux_alpha : float
+        Opacity of non-validated fluxes (0 = fully transparent, 1 = opaque).
+        Lower values make them easier to distinguish from validated fluxes.
 
     Returns
     -------
@@ -419,6 +425,7 @@ def plot_bowtie_fluxes(flux_dict, alpha=0.05, figsize=(7, 6), ax=None,
                 show_flux_color=True, show_flux_size=True,
                 neutral_r=neutral_r, neutral_lw=2.0,
                 neutral_block_color='white',
+                unvalidated_flux_alpha=unvalidated_flux_alpha,
                 validated_block_keys=None,
                 arrow_border=True)
     ax.set_title(f'Fluxes  (width ∝ log flux, FDR α={alpha})', fontsize=10)
