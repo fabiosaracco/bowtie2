@@ -57,8 +57,8 @@ from auxiliary_functions import el2ks
 
 from sam_bowtie import block_and_fluxes as bnf
 
-from plot_bowtie import plot_bowtie_blocks, plot_bowtie_fluxes, _add_colorbar
-from plot_bowtie import _fdr as fdr
+from bowtie_plot_functions import plot_bowtie_blocks, plot_bowtie_fluxes, _add_colorbar
+from bowtie_plot_functions import _fdr as fdr
 
 
 # --- Data folders ---
@@ -307,7 +307,7 @@ def main():
                 filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes_old.png'
             else:
                 filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes.png'
-            fluxes_plotter([rt_fluxes_0, rt_fluxes_1], filename, ufa=0.1)
+            fluxes_plotter([rt_fluxes_0, rt_fluxes_1], filename, ufa=0.05)
 
 
 if __name__ == "__main__":
