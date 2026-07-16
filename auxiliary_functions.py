@@ -38,7 +38,7 @@ def bic(model, decm_like=False):
     n = n_nodes*(n_nodes-1)  # Number of observations
 
     # as in the original BIC formula, 
-    # #we use the negative log-likelihood and the number of parameters 
+    # we use the negative log-likelihood and the number of parameters 
     # to compute the BIC value
     bic_value = 2 * model.neg_log_likelihood + num_parameters * np.log(n)
     return bic_value
