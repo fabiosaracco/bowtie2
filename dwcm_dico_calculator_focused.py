@@ -148,7 +148,7 @@ def main():
             return
 
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DWCM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
-        dwcm=DWCMModel(aux[0], aux[1], aux[2], aux[3])
+        dwcm=DWCMModel(aux[2], aux[3])
 
         # check if the existing solution can be used as a starting point
         if RECYCLE_SOL and hasattr(old_dwcm, 'sol'):
@@ -162,7 +162,7 @@ def main():
 
     else:
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DWCM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
-        dwcm=DWCMModel(aux[0], aux[1], aux[2], aux[3])
+        dwcm=DWCMModel(aux[2], aux[3])
         ic='strengths'
 
     
