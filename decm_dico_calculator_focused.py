@@ -35,7 +35,6 @@ HUB_TH=5
 GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=True
-#GAUGE_PIVOT='min'
 
 
 
