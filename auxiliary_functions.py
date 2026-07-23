@@ -30,7 +30,7 @@ def bic(model, decm_like=False):
     float: The BIC value.
     """
 
-    num_parameters = len(model.sol.theta)
+    num_parameters = len(model.sol.best_theta)
     if decm_like:
         n_nodes = num_parameters/4  
     else:
@@ -40,5 +40,5 @@ def bic(model, decm_like=False):
     # as in the original BIC formula, 
     # we use the negative log-likelihood and the number of parameters 
     # to compute the BIC value
-    bic_value = 2 * model.neg_log_likelihood + num_parameters * np.log(n)
+    bic_value = 2 * model.neg_log_likelihood(model.sol.best_theta) + num_parameters * np.log(n)
     return bic_value

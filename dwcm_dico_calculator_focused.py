@@ -20,10 +20,10 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-DATASET='crisi'
+DATASET='ita'
 #DICO=0
 #DICO=1
-DICO=2
+DICO=3
 #DICO=3
 
 
