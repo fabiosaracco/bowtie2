@@ -34,7 +34,7 @@ ANDERSON=7
 HUB_TH=5
 GAMMA=0.
 MONITOR=False
-RECYCLE_SOL=True
+RECYCLE_SOL=False
 
 
 
@@ -129,29 +129,29 @@ def main():
     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] N(nodes)={len(aux[4]):,}, N(edges)={len(el_dico[dico_class]):,}, density={len(el_dico[dico_class])/len(aux[4])**2:.2e}')
     sys.stdout.flush()
 
-    if len(aux[4])>3*10**4:
-        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
-        return
+    #if len(aux[4])>3*10**4:
+    #    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] The network is too big for the actual technology. Skipping, but with the aim to tackle it in the near future...')
+    #    return
     
     file_name=HOME+f'/tests/{dataset_name}_dico{dico_class}_dwcm_final.pkl'
     
-    if os.path.exists(file_name):
+    if os.path.exists(file_name) and RECYCLE_SOL:
         # check if the file was created/modified today
         #file_mtime = dt.date.fromtimestamp(os.path.getmtime(file_name))
         #if file_mtime == dt.date.today():
-        
         with open(file_name, 'rb') as f:
             old_dwcm=pickle.load(f)
-        if hasattr(old_dwcm, 'sol') and hasattr(old_dwcm.sol, 'converged') and old_dwcm.sol.converged and old_dwcm.sol.mre<TOL:
-            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for DWCM with pytorch and theta already exists. Skipping...')
-            sys.stdout.flush()
-            return
-
-        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DWCM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
-        dwcm=DWCMModel(aux[2], aux[3])
-
         # check if the existing solution can be used as a starting point
-        if RECYCLE_SOL and hasattr(old_dwcm, 'sol'):
+        if hasattr(old_dwcm, 'sol'):
+            if hasattr(old_dwcm.sol, 'converged') and old_dwcm.sol.converged and old_dwcm.sol.mre<TOL:
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for DWCM with pytorch and theta already exists. Skipping...')
+                sys.stdout.flush()
+                return
+
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] DWCM, pytorch, theta (max: {MAX_TIME_HOURS:} hours)')
+            dwcm=DWCMModel(aux[2], aux[3])
+
+            
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Recycling existing non-converged solution...')
             ic=old_dwcm.sol.best_theta
         else:
