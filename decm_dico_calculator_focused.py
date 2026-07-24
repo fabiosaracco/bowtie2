@@ -20,21 +20,23 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-DATASET='ita_elections'
+#DATASET='ita_elections'
+DATASET='crisi'
 #DICO=0
 #DICO=1
-#DICO=2
-DICO=3
+DICO=2
+#DICO=3
 
 
-MAX_TIME_HOURS=5
-MAX_ITER=5000
+MAX_TIME_HOURS=4
+MAX_ITER=10000
 TOL=1e-5
 ANDERSON=10
 HUB_TH=5
 GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=False
+BLOWUP=20
 
 
 
@@ -167,7 +169,7 @@ def main():
 
     
     try:
-        decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False)
+        decm.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=MAX_TIME_HOURS*3600, max_iter=MAX_ITER, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, blowup_factor=BLOWUP)
 
         # elapsed time (in hours and minutes)
         t_ets=decm.sol.elapsed_time

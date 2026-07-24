@@ -21,12 +21,12 @@ sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 TEST_FOLDER=HOME+'tests/'
 
-DATASET='quirinale'
+#DATASET='quirinale'
 #DATASET='crisi'
-#DATASET='ita'
+DATASET='ita'
 #DICO=1
 #DICO=0
-DICO=4
+DICO=3
 
 MAX_TIME_HOURS=6
 #MAX_TIME_HOURS=2
@@ -35,8 +35,8 @@ ANDERSON=10
 HUB_TH=5
 #GAMMA=1.2
 GAMMA=0.
-RECYCLE_TOPOLOGY=True
-RECYCLE_WEIGHTS=True
+RECYCLE_TOPOLOGY=False
+RECYCLE_WEIGHTS=False
 
 
 
@@ -122,7 +122,7 @@ def main():
     sys.stdout.flush()
 
     qdecm_filename=TEST_FOLDER+f'{dataset_name}_dico{dico_class}_qdecm.pkl'
-    if os.path.exists(qdecm_filename):
+    if os.path.exists(qdecm_filename) and (RECYCLE_TOPOLOGY or RECYCLE_WEIGHTS):
         # check the existing solution
         with open(qdecm_filename, 'rb') as f:
             model=pickle.load(f)
@@ -155,7 +155,7 @@ def main():
 
 
     try:
-        qdecm.solve_tool(tol=TOL, ic_topo=ic_topo, ic_wei=ic_wei, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=True, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA)
+        qdecm.solve_tool(tol=TOL, ic_topo=ic_topo, ic_wei=ic_wei, backend='pytorch', max_time=MAX_TIME_HOURS*3600, verbose=True, monitor=False, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA)
     except Exception as e:
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Error solving QDECM with pytorch and theta: {e}')
         sys.stdout.flush()
@@ -176,3 +176,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if platform.system() == 'Darwin':
+        os.system("afplay ta-da.mp3")
+
