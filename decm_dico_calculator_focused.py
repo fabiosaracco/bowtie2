@@ -20,12 +20,12 @@ else:
 sys.path.insert(0, HOME)
 DATA_FOLDER=HOME+'dati_elezioni/'
 
-#DATASET='ita_elections'
-DATASET='crisi'
+DATASET='ita_elections'
+#DATASET='crisi'
 #DICO=0
 #DICO=1
-DICO=2
-#DICO=3
+#DICO=2
+DICO=3
 
 
 MAX_TIME_HOURS=24
@@ -36,7 +36,7 @@ HUB_TH=5
 GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=False
-BLOWUP=20
+BLOWUP=None
 
 
 
