@@ -24,8 +24,8 @@ DATASET='ita_elections'
 #DATASET='crisi'
 #DICO=0
 #DICO=1
-DICO=2
-#DICO=3
+#DICO=2
+DICO=3
 
 
 MAX_TIME_HOURS=24
@@ -35,7 +35,7 @@ ANDERSON=10
 HUB_TH=5
 GAMMA=0.
 MONITOR=False
-RECYCLE_SOL=True
+RECYCLE_SOL=False
 BLOWUP=None
 
 def jackie_chunk(model, n_chunks, ic, filename_checkpoint):
@@ -57,17 +57,15 @@ def jackie_chunk(model, n_chunks, ic, filename_checkpoint):
             best_mre = model.sol.mre
             global_best_theta = model.sol.best_theta.copy()
         theta = model.sol.theta          # continue from where this chunk left off
-        save_checkpoint(chunk, theta, global_best_theta, best_mre, filename_checkpoint)  # survive a restart
+        save_checkpoint(chunk, model.sol, filename_checkpoint)  # survive a restart
         if model.sol.converged:
             break
     return model
 
-def save_checkpoint(chunk, theta, global_best_theta, best_mre, filename):
+def save_checkpoint(chunk, sol, filename):
     checkpoint = {
         'chunk': chunk,
-        'theta': theta,
-        'global_best_theta': global_best_theta,
-        'best_mre': best_mre
+        'sol': sol
     }
     with open(filename, 'ab') as f:
         pickle.dump(checkpoint, f)
