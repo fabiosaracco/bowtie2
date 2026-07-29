@@ -28,8 +28,8 @@ DICO=0
 #DICO=3
 
 
-MAX_TIME_HOURS=36
-MAX_ITER=1000
+MAX_TIME_HOURS=48
+MAX_ITER=100000
 TOL=1e-5
 ANDERSON=10
 HUB_TH=5
@@ -37,7 +37,7 @@ GAMMA=0.
 MONITOR=False
 RECYCLE_SOL=False
 BLOWUP=None
-N_CHUNKS=10
+N_CHUNKS=100
 
 def jackie_chunk(model, n_chunks, ic, filename_checkpoint):
     '''
