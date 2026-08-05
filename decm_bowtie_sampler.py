@@ -8,10 +8,8 @@ from collections import defaultdict
 from sam_bowtie import validate
 
 if platform.system() == 'Darwin':
-    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Air!')
     HOME = '/Users/fabio/Documents/Lavoro/PythonFiles/bowtie2_py310/bowtie2/'
 elif platform.system() == 'Linux':
-    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Stella!')
     HOME = '/home/sarawalk/bowtie2_py39/bowtie2/'
 else:
     raise RuntimeError(f"Unsupported OS: {platform.system()}")
@@ -130,11 +128,19 @@ def main():
                 pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_{counter}.pkl'
                 counter+=1
                         
-            block_dict, flux_dict=validate(el_dico[d], qdecm, n_runs=N_RUNS, verbose=True)
+            
             with open(pvalue_block_filename, 'wb') as f:
                 pickle.dump(block_dict, f)
             with open(pvalue_flux_filename, 'wb') as f:
                 pickle.dump(flux_dict, f)
 
 if __name__ == "__main__":
+    if platform.system() == 'Darwin':
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Air!')
+    elif platform.system() == 'Linux':
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Stella!')
+
     main()
+    if platform.system() == 'Darwin':
+        os.system("afplay ta-da.mp3")
+    
