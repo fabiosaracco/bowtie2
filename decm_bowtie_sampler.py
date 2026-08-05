@@ -52,7 +52,6 @@ def get_dicos(files, i):
     n_nodes=np.unique(n_nodes)
 
     # Edges
-    
     _tmp = defaultdict(list)
     # auxiliary defaultdict to group edges by dico class
     for edge in el:
