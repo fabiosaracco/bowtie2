@@ -74,7 +74,7 @@ def get_dicos(files, i):
     dicos=list(el_dico.keys())
     dicos.sort()
 
-    return dicos, el_dico
+    return dicos, el_dico, dataset_name
 
 
 
@@ -88,7 +88,7 @@ def main():
     # - ???_weighted_edgelist.csv: edge list with columns source_id, target_id, weight
 
     for i in range(len(files)//2):
-        dicos, el_dico = get_dicos(files, i)
+        dicos, el_dico, dataset_name = get_dicos(files, i)
         for d in dicos:
 
             # find the proper input file
@@ -101,11 +101,15 @@ def main():
                 convergence_found=False
                 for file in dataset_dico_files:
                     # the last one is the definitive one
-                    with open(TEST_FOLDER+file, 'rb') as f:
-                        _aux=pickle.load(f)
+                    try:
+                        with open(TEST_FOLDER+file, 'rb') as f:
+                            _aux=pickle.load(f)
+                    except:
+                        continue
                     if hasattr(_aux, 'sol') and _aux.sol.converged:
                         convergence_found=True
                         decm=_aux
+                    
                 if convergence_found==False:
                     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] No converged DECM file found for DiCo {d}, skipping...')
                     sys.stdout.flush()
