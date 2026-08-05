@@ -1,6 +1,7 @@
 import os, sys, pickle
 import platform
 import datetime as dt
+import time
 import numpy as np
 from collections import defaultdict
 
@@ -30,7 +31,8 @@ def get_dicos(files, i):
     el_file = files[2*i + 1]
     dataset_name=dico_file[:-10]
     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ***{dataset_name.title()}***')
-
+    sys.stdout.flush()
+    
     # Load the DiCo information
     dico=np.genfromtxt(DATA_FOLDER+dico_file, delimiter=',',skip_header=1, autostrip=True, dtype=[('user_id', '>U50'), ('dico', '>U2'), ('h_dico', 'U2'), ('i_dico', 'U2')])
     
@@ -78,7 +80,7 @@ def get_dicos(files, i):
 
 def main():
 
-    files=os.listdir(DATA_FOLDER)
+    files=[f for f in os.listdir(DATA_FOLDER) if f.endswith('.csv')]
     files.sort()
 
     # Each dataset has two files:
