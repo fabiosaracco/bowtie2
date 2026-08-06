@@ -24,10 +24,28 @@ PVALUE_FOLDER=HOME+'pvalues/'
 N_RUNS=5*1000
 RERUN=False
 
-def get_dicos(files, i):
-    dico_file = files[2*i]
-    el_file = files[2*i + 1]
+DATASET='ita_elections'
+DICO=3
+
+def get_dicos():
+
+    dataset_keyword=DATASET
+    dico_class=DICO
+            
+    files=os.listdir(DATA_FOLDER)
+    files.sort()
+    
+    # Each dataset has two files:
+    # - ???_dicos.csv: DiCo information per node
+    # - ???_weighted_edgelist.csv: edge list with columns source_id, target_id, weight
+    
+    # Focus on a single dataset
+    files=[f for f in files if f.startswith(dataset_keyword)]
+
+    dico_file = files[0]
+    el_file = files[1]
     dataset_name=dico_file[:-10]
+    
     print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] ***{dataset_name.title()}***')
     sys.stdout.flush()
     
@@ -84,61 +102,58 @@ def main():
     # - ???_dicos.csv: DiCo information per node
     # - ???_weighted_edgelist.csv: edge list with columns source_id, target_id, weight
 
-    for i in range(len(files)//2):
-        dicos, el_dico, dataset_name = get_dicos(files, i)
-        for d in dicos:
+    
+    dicos, el_dico, dataset_name = get_dicos()
+    d=DICO
 
-            # find the proper input file
-            dataset_dico_files=[file for file in os.listdir(TEST_FOLDER) if f'{dataset_name}' in file and f'dico{d}' in file and 'decm' in file]
-            if len(dataset_dico_files) == 0:
-                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] No DECM file found for DiCo {d}, skipping...')
-                sys.stdout.flush()
+    # find the proper input file
+    dataset_dico_files=[file for file in os.listdir(TEST_FOLDER) if f'{dataset_name}' in file and f'dico{d}' in file and 'decm' in file]
+    if len(dataset_dico_files) == 0:
+        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] No DECM file found for DiCo {d}, skipping...')
+        sys.stdout.flush()
+        return
+    else:
+        convergence_found=False
+        for file in dataset_dico_files:
+            # the last one is the definitive one
+            try:
+                with open(TEST_FOLDER+file, 'rb') as f:
+                    _aux=pickle.load(f)
+            except:
                 continue
-            else:
-                convergence_found=False
-                for file in dataset_dico_files:
-                    # the last one is the definitive one
-                    try:
-                        with open(TEST_FOLDER+file, 'rb') as f:
-                            _aux=pickle.load(f)
-                    except:
-                        continue
-                    if hasattr(_aux, 'sol') and _aux.sol.converged:
-                        print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Converged DECM file found for DiCo {d}')
-                        sys.stdout.flush()
-                        convergence_found=True
-                        decm=_aux
-                    
-                if convergence_found==False:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] No converged DECM file found for DiCo {d}, skipping...')
-                    sys.stdout.flush()
-                    continue
-            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d}...')
+            if hasattr(_aux, 'sol') and _aux.sol.converged:
+                print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Converged DECM file found for DiCo {d}')
+                sys.stdout.flush()
+                convergence_found=True
+                decm=_aux
+            
+        if convergence_found==False:
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] No converged DECM file found for DiCo {d}, skipping...')
             sys.stdout.flush()
+            return
+    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d}...')
+    sys.stdout.flush()
 
-            # find the proper destination file
-            pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks_decm.pkl'
-            pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_decm.pkl'
+    # find the proper destination file
+    pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks_decm.pkl'
+    pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_decm.pkl'
+    
+    counter=0
+    while os.path.exists(pvalue_block_filename):
+        if not RERUN:
+            print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] P-value files already exist for DiCo {d}, skipping...')
+            sys.stdout.flush()
+            return
+        pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks_{counter}.pkl'
+        pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_{counter}.pkl'
+        counter+=1
 
-                        
-
-            
-            counter=0
-            while os.path.exists(pvalue_block_filename):
-                if not RERUN:
-                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] P-value files already exist for DiCo {d}, skipping...')
-                    sys.stdout.flush()
-                    continue
-                pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks_{counter}.pkl'
-                pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_{counter}.pkl'
-                counter+=1
-
-            block_dict, flux_dict=validate(el_dico[d], decm, n_runs=N_RUNS, verbose=True)            
-            
-            with open(pvalue_block_filename, 'wb') as f:
-                pickle.dump(block_dict, f)
-            with open(pvalue_flux_filename, 'wb') as f:
-                pickle.dump(flux_dict, f)
+    block_dict, flux_dict=validate(el_dico[d], decm, n_runs=N_RUNS, verbose=True)            
+    
+    with open(pvalue_block_filename, 'wb') as f:
+        pickle.dump(block_dict, f)
+    with open(pvalue_flux_filename, 'wb') as f:
+        pickle.dump(flux_dict, f)
 
 if __name__ == "__main__":
     if platform.system() == 'Darwin':
