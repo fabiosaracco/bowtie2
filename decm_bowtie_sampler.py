@@ -114,7 +114,7 @@ def main():
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Processing DiCo {d}...')
             sys.stdout.flush()
 
-            # fidn the proper destination file
+            # find the proper destination file
             pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks_decm.pkl'
             pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_decm.pkl'
 
@@ -123,6 +123,10 @@ def main():
             block_dict, flux_dict=validate(el_dico[d], decm, n_runs=N_RUNS, verbose=True)
             counter=0
             while os.path.exists(pvalue_block_filename):
+                if not RERUN:
+                    print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] P-value files already exist for DiCo {d}, skipping...')
+                    sys.stdout.flush()
+                    continue
                 pvalue_block_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_blocks_{counter}.pkl'
                 pvalue_flux_filename=PVALUE_FOLDER+f'{dataset_name}_dico{d}_pvalues_fluxes_{counter}.pkl'
                 counter+=1
