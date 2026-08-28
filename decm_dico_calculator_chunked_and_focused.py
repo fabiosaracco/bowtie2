@@ -29,15 +29,16 @@ DICO=3
 
 
 MAX_TIME_HOURS=24
-MAX_ITER=100000
+MAX_ITER=10000
 TOL=1e-5
 ANDERSON=10
 HUB_TH=5
 GAMMA=0.
 MONITOR=False
-RECYCLE_SOL=False
+RECYCLE_SOL=True 
 BLOWUP=None
 N_CHUNKS=10
+NOISE_BASE=10**-3
 
 def jackie_chunk(model, n_chunks, ic, filename_checkpoint):
     '''
@@ -51,9 +52,9 @@ def jackie_chunk(model, n_chunks, ic, filename_checkpoint):
     for chunk in range(n_chunks):
         print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Starting chunk {chunk+1}/{n_chunks}...')
         if chunk==0:
-            model.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=max_time_chunk, max_iter=max_iter_chunk, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, blowup_factor=BLOWUP)
+            model.solve_tool(tol=TOL, backend='pytorch', ic=ic, max_time=max_time_chunk, max_iter=max_iter_chunk, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, blowup_factor=BLOWUP, noise_base=NOISE_BASE)
         else:
-            model.solve_tool(tol=TOL, backend='pytorch', ic=global_best_theta, max_time=max_time_chunk, max_iter=max_iter_chunk, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, blowup_factor=BLOWUP)
+            model.solve_tool(tol=TOL, backend='pytorch', ic=global_best_theta, max_time=max_time_chunk, max_iter=max_iter_chunk, verbose=True, monitor=MONITOR, anderson_depth=ANDERSON, hub_sk_threshold=HUB_TH, backtracking_gamma=GAMMA, multi_start=False, blowup_factor=BLOWUP, noise_base=NOISE_BASE)
         if model.sol.mre < best_mre:
             best_mre = model.sol.mre
             global_best_theta = model.sol.best_theta.copy()
@@ -193,13 +194,13 @@ def main():
                     checkpoint = pickle.load(f)
             except EOFError:
                 pass  # reached the end of the file
-        if checkpoint['best_mre'] < TOL:
+        if checkpoint['sol'].best_mre < TOL:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] A converged solution for decm with pytorch and theta already exists in the checkpoint. Skipping...')
             sys.stdout.flush()
             return
         else:
             print(f'[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] Recycling existing non-converged solution from checkpoint...')
-            ic=checkpoint['global_best_theta']
+            ic=checkpoint['sol'].best_theta
     else:
         ic="degrees"
         
