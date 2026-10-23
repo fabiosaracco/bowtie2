@@ -50,31 +50,6 @@ GUARINO_FOLDER=HOME+'guarino_files/'
 BIPARTITE_FOLDER=HOME+'BiDCM/'
 PLOT_FOLDER=HOME+'plots/'
 
-def parse_dico_names(filepath):
-    with open(filepath, 'r') as f:
-        lines = [line.strip().split() for line in f]
-        # such a command creates a list
-        # in which each element is a list of tokens of a line in the file
-        # remarkably, there is an empty element
-        # before each dataset name
-        
-    result = {}
-    current_key = None
-
-    for tokens in lines:
-        if not tokens:
-            current_key = None
-        elif current_key is None:
-            # prima riga non vuota del gruppo: nome del dataset
-            current_key = tokens[0]
-            result[current_key] = {}
-        else:
-            # riga tipo ['5:', 'journalists', '&', 'Media']
-            idx = int(tokens[0].rstrip(':'))
-            label = ' '.join(tokens[1:])
-            result[current_key][idx] = label
-
-    return result
 
 def get_converged_solutions():
     solution_files=[f for f in os.listdir(TEST_FOLDER) if f.endswith('.pkl')]
@@ -139,7 +114,7 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
     if not all(model in sol_dict for model in ['DECM', 'qDECM', 'DWCM']):
         if verbose:
             msg="Dataset does not have all three models. Skipping."
-            status(dataset, i, len(_three_of_us), msg)
+            status(dataset, i, len(final_dict), msg)
             return 
 
     # Extract solutions
@@ -148,13 +123,13 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
     dwcm_sol=sol_dict['DWCM']
     N=decm_sol.N
 
-    #if N**2>10**9:
-    #    msg=f"N={N:.2e} is too large, skipping dataset..."
-    #    status(dataset, i, len(_three_of_us), msg)
-    #    continue
+    if N**2>2*10**9:
+        msg=f"N={N:.2e} is too large, skipping dataset..."
+        status(dataset, i, len(final_dict), msg)
+        return 1
     if verbose:
         msg=f"N={N:.2e} Processing dataset..."
-        status(dataset, i, len(_three_of_us), msg)
+        status(dataset, i, len(final_dict), msg)
     # Now you can proceed with your analysis using decm_sol, qdecm_sol, and dwcm_sol
     theta_decm=decm_sol.sol.best_theta
     theta_qdecm=qdecm_sol.sol.best_theta
@@ -163,7 +138,7 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
     # select some of the entries
     if verbose:
         msg=f"N={N:.2e} Selecting entries..."
-        status(dataset, i+1, len(_three_of_us), msg)   
+        status(dataset, i+1, len(final_dict), msg)   
 
     selected_points=rng.choice(N**2, size=sample_size, replace=False)
     
@@ -171,19 +146,19 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
         # probability matrices
         if verbose:
             msg="Processing DECM..."
-            status(dataset, i+1, len(_three_of_us), msg)    
+            status(dataset, i+1, len(final_dict), msg)    
         p_decm=decm_sol.pij_matrix(theta_decm).flatten()
         p_decm=p_decm[selected_points]
 
         if verbose:
             msg="Processing qDECM..."
-            status(dataset, i+1, len(_three_of_us), msg)    
+            status(dataset, i+1, len(final_dict), msg)    
         p_qdecm=qdecm_sol.pij_matrix(theta_qdecm[:2*N]).flatten()
         p_qdecm=p_qdecm[selected_points]
 
         if verbose:
             msg="Processing DWCM..."
-            status(dataset, i+1, len(_three_of_us), msg)        
+            status(dataset, i+1, len(final_dict), msg)        
         p_dwcm=dwcm_sol.pij_matrix(theta_dwcm).flatten()
         p_dwcm=p_dwcm[selected_points]
 
@@ -191,25 +166,25 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
 
         if verbose:
             msg="Points selected..."
-            status(dataset, i+1, len(_three_of_us), msg)
+            status(dataset, i+1, len(final_dict), msg)
 
     elif p_or_w=='w':
             # probability matrices
             if verbose:
                 msg="Processing DECM..."
-                status(dataset, i+1, len(_three_of_us), msg)    
+                status(dataset, i+1, len(final_dict), msg)    
             p_decm=decm_sol.wij_matrix(theta_decm).flatten()
             p_decm=p_decm[selected_points]
     
             if verbose:
                 msg="Processing qDECM..."
-                status(dataset, i+1, len(_three_of_us), msg)    
-            p_qdecm=qdecm_sol.wij_matrix_conditioned(theta_qdecm[:2*N]).flatten()
+                status(dataset, i+1, len(final_dict), msg)    
+            p_qdecm=qdecm_sol.wij_matrix_conditioned(theta_qdecm[:2*N], theta_qdecm[2*N:]).flatten()
             p_qdecm=p_qdecm[selected_points]
     
             if verbose:
                 msg="Processing DWCM..."
-                status(dataset, i+1, len(_three_of_us), msg)        
+                status(dataset, i+1, len(final_dict), msg)        
             p_dwcm=dwcm_sol.wij_matrix(theta_dwcm).flatten()
             p_dwcm=p_dwcm[selected_points]
     
@@ -217,7 +192,7 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
     
             if verbose:
                 msg="Points selected..."
-                status(dataset, i+1, len(_three_of_us), msg)
+                status(dataset, i+1, len(final_dict), msg)
     else:
         raise ValueError(f"Invalid value for p_or_w: {p_or_w}. Must be 'p' or 'w'.")
     # plot
@@ -248,7 +223,8 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
     plt.savefig(PLOT_FOLDER+f"{p_or_w}_comparison_{dataset}.png")
     if verbose:
         msg="Plot saved!"
-        status(dataset, i+1, len(_three_of_us), msg)    
+        status(dataset, i+1, len(final_dict), msg)    
+    return 0
 
 
 
@@ -277,7 +253,9 @@ def main():
     
     # Loop through each dataset and plot comparisons
     for i in range(len(final_dict)):
-        plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_qdecm, labels_dwcm, verbose=False, i=i, p_or_w=args.p_or_w)  
+        if os.path.exists(PLOT_FOLDER+f"{args.p_or_w}_comparison_{list(final_dict.keys())[i]}.png"):
+            continue
+        plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_qdecm, labels_dwcm, verbose=True, i=i, p_or_w=args.p_or_w)  
 
 if __name__ == "__main__":
     main()
