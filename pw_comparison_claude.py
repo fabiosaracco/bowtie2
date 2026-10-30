@@ -43,6 +43,7 @@ PVALUE_FOLDER=HOME+'pvalues/'
 GUARINO_FOLDER=HOME+'guarino_files/'
 BIPARTITE_FOLDER=HOME+'BiDCM/'
 PLOT_FOLDER=HOME+'plots/'
+MODELS_FOLDER='/Users/fabio/Documents/Lavoro/PythonFiles/bowtie2_py310/benchmark_19/results_final/models/'
 
 # Clamps used by the *_matrix methods of the model classes (kept identical here)
 _Z_G_CLAMP_DECM=1e-6    # dcms/models/decm.py, _Z_G_CLAMP
@@ -51,8 +52,20 @@ _Z_CLAMP_DWCM=1e-15     # dcms/models/dwcm.py, wij_matrix
 
 
 def get_converged_solutions():
-    solution_files=[f for f in os.listdir(TEST_FOLDER) if f.endswith('.pkl')]
+    # different version of the package reads the solution files differently
+    import importlib
+    import numpy.core as nc
+    sys.modules["numpy._core"] = nc
+    for sub in ("numeric", "multiarray", "_multiarray_umath", "numerictypes", "fromnumeric"):
+        try:
+            sys.modules["numpy._core." + sub] = importlib.import_module("numpy.core." + sub)
+        except Exception:
+            pass
+    
+    solution_files=[f for f in os.listdir(MODELS_FOLDER) if f.endswith('.pkl')]
     solution_files.sort()
+
+
     final_dict={}
     for solution in solution_files:
         # get the model type from the solution filename
@@ -63,6 +76,7 @@ def get_converged_solutions():
         elif 'dwcm' in solution.lower():
             model_type='DWCM'
         else:
+            print(f"Unknown model type in solution {solution}. Skipping.")
             continue
 
         # get the dataset from the solution filename
@@ -73,30 +87,37 @@ def get_converged_solutions():
         elif 'quirinale' in solution.lower():
             name='p'
         else:
+            print(f"Unknown dataset in solution {solution}. Skipping.")
             continue
-
+        
         try:
             i_dico=solution.index('dico')
             dico=solution[i_dico+4]
         except ValueError:
+            print(f"No 'dico' found in solution {solution}. Skipping.")
             continue
 
         dataset=f"{name}{dico}"
-        if os.path.exists(TEST_FOLDER+solution):
+        if os.path.exists(MODELS_FOLDER+solution):
             try:
-                with open(TEST_FOLDER+solution, 'rb') as f:
+                with open(MODELS_FOLDER+solution, 'rb') as f:
                     _temp = pickle.load(f)
-            except Exception:
-                os.remove(TEST_FOLDER+solution)
+            except Exception as e:
+                print(f"{solution}: Error occurred while loading the solution: {e}. Deleting the file and skipping.")
                 continue
             try:
                 if _temp.sol.mre < 1e-5:  # Check if the model converged
+                    print(f"{solution}: Model converged.")
                     if dataset not in final_dict:
                         final_dict[dataset]={}
                     if model_type not in final_dict[dataset]:
                         final_dict[dataset][model_type]=_temp
+                    else:
+                        print(f"{solution}: Converging model already exists in final_dict. Skipping.")
+                else:
+                    print(f"{solution}: Model did not converge.")
             except AttributeError:
-                pass
+                print(f"{solution}: No 'sol' attribute in the loaded data.")
     return final_dict
 
 def status(dataset, i, n, msg, width=50):
@@ -299,7 +320,7 @@ def plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_
         axs[j].set_xlabel(labels_decm[label_index], fontsize=16)
     axs[0].set_ylabel(labels_dwcm[label_index], fontsize=16)
     axs[1].set_ylabel(labels_qdecm[label_index], fontsize=16)
-    plt.savefig(PLOT_FOLDER+f"{p_or_w}_comparison_claude_{dataset}.png")
+    plt.savefig(PLOT_FOLDER+f"{p_or_w}_comparison_{dataset}.png")
     plt.close(fig)
     if verbose:
         msg="Plot saved!"
@@ -332,8 +353,8 @@ def main():
 
     # Loop through each dataset and plot comparisons
     for i in range(len(final_dict)):
-        if os.path.exists(PLOT_FOLDER+f"{args.p_or_w}_comparison_claude_{list(final_dict.keys())[i]}.png"):
-            continue
+        if os.path.exists(PLOT_FOLDER+f"{args.p_or_w}_comparison_{list(final_dict.keys())[i]}.png"):
+            os.remove(PLOT_FOLDER+f"{args.p_or_w}_comparison_{list(final_dict.keys())[i]}.png")
         plot_p_comparison(final_dict, rng, sample_size, colors, labels_decm, labels_qdecm, labels_dwcm, verbose=True, i=i, p_or_w=args.p_or_w)
     print()
 

@@ -55,7 +55,7 @@ sys.path.insert(0, HOME)
 
 from auxiliary_functions import el2ks
 
-from sam_bowtie import block_and_fluxes as bnf
+from sam_bowtie import block_and_fluxes as bnf, pvalue_block, pvalue_flux
 
 from bowtie_plot_functions import plot_bowtie_blocks, plot_bowtie_fluxes, _add_colorbar
 from bowtie_plot_functions import _fdr as fdr
@@ -96,9 +96,7 @@ def guarino2dict_blocks(dataset, dico):
         block_dict_bipartite[key] = {}
         block_dict_bipartite[key]['obs'] = block_dict_0[key]['obs']
         block_dict_bipartite[key]['sample'] = cacca[:, i]
-        _ge = np.sum(cacca[:, i] >= block_dict_bipartite[key]['obs'])
-        _le = np.sum(cacca[:, i] <= block_dict_bipartite[key]['obs'])
-        block_dict_bipartite[key]['p_value'] = 2 * min(_ge, _le) / len(block_dict_bipartite[key]['sample'])
+        block_dict_bipartite[key]['p_value'] = pvalue_block(cacca[:, i], block_dict_bipartite[key]['obs'], len(cacca[:, i]))
         _median = np.median(block_dict_bipartite[key]['sample'])
         if _median > block_dict_bipartite[key]['obs']:
             block_dict_bipartite[key]['tail'] = 'left'
@@ -131,9 +129,7 @@ def guarino2dict_fluxes(dataset, dico):
             continue  # skip if the key is not in flux_dict_0
         flux_dict_bipartite[key]['obs'] = flux_dict_0[key]['obs']
         flux_dict_bipartite[key]['sample'] = cacca[:, i]
-        _ge = np.sum(cacca[:, i] >= flux_dict_bipartite[key]['obs'])
-        _le = np.sum(cacca[:, i] <= flux_dict_bipartite[key]['obs'])
-        flux_dict_bipartite[key]['p_value'] = 2 * min(_ge, _le) / len(flux_dict_bipartite[key]['sample'])
+        flux_dict_bipartite[key]['p_value'] = pvalue_flux(cacca[:, i], flux_dict_bipartite[key]['obs'], len(cacca[:, i]))
         _median = np.median(flux_dict_bipartite[key]['sample'])
         if _median > flux_dict_bipartite[key]['obs']:
             flux_dict_bipartite[key]['tail'] = 'left'
@@ -144,6 +140,8 @@ def guarino2dict_fluxes(dataset, dico):
 
 
 def right_tailer(block_dict):
+    # DEPRECATED: converts a two-tailed p-value into a right-tailed one; it mutates its input in place and is no longer
+    # needed (flux p-values are right-tailed from the start, see pvalue_flux). Kept only for old notebooks.
     right_tailed_dict = {}
     for key, item in block_dict.items():
         right_tailed_dict[key] = item
@@ -160,6 +158,14 @@ def ppmf(dataset, dico):
 
     with open(PVALUE_FOLDER + f'{dataset}_dico{dico}_pvalues_fluxes_1.pkl', 'rb') as f:
         flux_dict_1 = pickle.load(f)
+
+    # absent block/flux in a realization = 0 (old files omit those entries); p-values recomputed here:
+    # blocks two-tailed, fluxes right-tailed (the stored 'p_value' of old files is not used)
+    for d_, fn in ((block_dict_1, pvalue_block), (flux_dict_1, pvalue_flux)):
+        n_runs = max(len(v['count_sample']) for v in d_.values())
+        for v in d_.values():
+            v['p_value'] = fn(v['count_sample'], v['obs'], n_runs)
+            v['count_sample'] = list(v['count_sample']) + [0] * (n_runs - len(v['count_sample']))
 
     for key, value in block_dict_1.items():
         block_dict_1[key]['mean_sim'] = np.mean(value['count_sample'])
@@ -204,9 +210,7 @@ def guarino2dict_blocks_DCM(dataset, dico):
         block_dict_bipartite[key] = {}
         block_dict_bipartite[key]['obs'] = block_dict_0[key]['obs']
         block_dict_bipartite[key]['sample'] = cacca[:, i]
-        _ge = np.sum(cacca[:, i] >= block_dict_bipartite[key]['obs'])
-        _le = np.sum(cacca[:, i] <= block_dict_bipartite[key]['obs'])
-        block_dict_bipartite[key]['p_value'] = 2 * min(_ge, _le) / len(block_dict_bipartite[key]['sample'])
+        block_dict_bipartite[key]['p_value'] = pvalue_block(cacca[:, i], block_dict_bipartite[key]['obs'], len(cacca[:, i]))
         _median = np.median(block_dict_bipartite[key]['sample'])
         if _median > block_dict_bipartite[key]['obs']:
             block_dict_bipartite[key]['tail'] = 'left'
@@ -301,8 +305,8 @@ def main():
         dicos = sorted(dico_dict[dataset].keys())
         for dico in tqdm(dicos, leave=False):
             fluxes=guarino2dict_fluxes(dataset, dico)
-            rt_fluxes_0 = right_tailer(fluxes[0])
-            rt_fluxes_1 = right_tailer(fluxes[1])
+            rt_fluxes_0 = fluxes[0]   # flux p-values are already right-tailed (pvalue_flux): no right_tailer
+            rt_fluxes_1 = fluxes[1]
             if OLD_BIDCM:
                 filename = PLOT_FOLDER+f'{dataset}_{dico}_fluxes_old.png'
             else:
