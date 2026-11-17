@@ -1,5 +1,18 @@
-import os, sys
+import os, platform, sys
 import numpy as np
+from collections import defaultdict
+
+if platform.system() == 'Darwin':
+    print('Air!')
+    HOME = '/Users/fabio/Documents/Lavoro/PythonFiles/bowtie2_py310/bowtie2/'
+elif platform.system() == 'Linux':
+    print('Stella!')
+    HOME = '/home/sarawalk/bowtie2_py39/bowtie2/'
+else:
+    raise RuntimeError(f"Unsupported OS: {platform.system()}")
+
+sys.path.insert(0, HOME)
+DATA_FOLDER=HOME+'dati_elezioni/'
 
 def el2ks(el):
     all_nodes=np.concatenate((el['source_id'], el['target_id']))
@@ -42,3 +55,34 @@ def bic(model, decm_like=False):
     # to compute the BIC value
     bic_value = 2 * model.neg_log_likelihood(model.sol.best_theta) + num_parameters * np.log(n)
     return bic_value
+
+def load_dico_edges(dataset, dico_class):
+    files = [f for f in sorted(os.listdir(DATA_FOLDER)) if f.startswith(dataset)]
+    dico_file, el_file = files[0], files[1]
+
+    dico = np.genfromtxt(DATA_FOLDER + dico_file, delimiter=',', skip_header=1,
+                          autostrip=True,
+                          dtype=[('user_id', '>U50'), ('dico', '>U2'),
+                                 ('h_dico', 'U2'), ('i_dico', 'U2')])
+    el = np.genfromtxt(DATA_FOLDER + el_file, delimiter=',', skip_header=1,
+                        autostrip=True,
+                        dtype=[('source_id', '>U50'), ('target_id', '>U20'),
+                               ('weight', 'i4')])
+
+    dico_dict = {}
+    for d in dico:
+        if d['dico'].isnumeric():
+            dico_dict[d['user_id']] = int(d['dico'])
+
+    _tmp = defaultdict(list)
+    for edge in el:
+        src = edge['source_id'].strip()
+        tgt = edge['target_id'].strip()
+        d_src = dico_dict.get(src)
+        if d_src is not None and d_src == dico_dict.get(tgt):
+            _tmp[d_src].append(edge)
+
+    if dico_class not in _tmp:
+        raise ValueError(f'dico class {dico_class} not found in {dataset}')
+
+    return np.array(_tmp[dico_class], dtype=el.dtype)
